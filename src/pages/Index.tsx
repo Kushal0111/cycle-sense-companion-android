@@ -2,10 +2,11 @@
 import { useState, useEffect } from "react";
 import { Calendar, Heart, Brain, Bell, Settings } from "lucide-react";
 import { CycleTracker } from "@/components/CycleTracker";
-import { HealthTips } from "@/components/HealthTips";
+import { CycleCalendar } from "@/components/CycleCalendar";
 import { CyclePrediction } from "@/components/CyclePrediction";
 import { Reminders } from "@/components/Reminders";
 import { OnboardingModal } from "@/components/OnboardingModal";
+import { StickyTips } from "@/components/StickyTips";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("tracker");
@@ -26,8 +27,8 @@ const Index = () => {
 
   const tabs = [
     { id: "tracker", label: "Tracker", icon: Calendar },
+    { id: "calendar", label: "Calendar", icon: Heart },
     { id: "prediction", label: "Predict", icon: Brain },
-    { id: "tips", label: "Tips", icon: Heart },
     { id: "reminders", label: "Reminders", icon: Bell },
   ];
 
@@ -35,10 +36,10 @@ const Index = () => {
     switch (activeTab) {
       case "tracker":
         return <CycleTracker />;
+      case "calendar":
+        return <CycleCalendar />;
       case "prediction":
         return <CyclePrediction />;
-      case "tips":
-        return <HealthTips />;
       case "reminders":
         return <Reminders />;
       default:
@@ -71,6 +72,9 @@ const Index = () => {
       <main className="container mx-auto px-4 py-6 pb-24">
         {renderActiveTab()}
       </main>
+
+      {/* Sticky Tips */}
+      <StickyTips />
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-pink-200 z-50">

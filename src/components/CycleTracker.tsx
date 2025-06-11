@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Calendar, Plus, Droplets } from "lucide-react";
+import { Calendar, Plus, Droplets, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -19,6 +19,7 @@ export const CycleTracker = () => {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [isLoggingStart, setIsLoggingStart] = useState(true);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     const savedPeriods = localStorage.getItem("cyclesense-periods");
@@ -68,6 +69,8 @@ export const CycleTracker = () => {
       description: `Logged period start for ${format(date, "MMM dd, yyyy")}`,
     });
     setShowCalendar(false);
+    setShowConfirm(false);
+    setSelectedDate(undefined);
   };
 
   const logPeriodEnd = (date: Date) => {
@@ -91,17 +94,29 @@ export const CycleTracker = () => {
       description: `Logged period end for ${format(date, "MMM dd, yyyy")}`,
     });
     setShowCalendar(false);
+    setShowConfirm(false);
+    setSelectedDate(undefined);
   };
 
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) return;
     setSelectedDate(date);
+    setShowConfirm(true);
+  };
+
+  const handleConfirm = () => {
+    if (!selectedDate) return;
     
     if (isLoggingStart) {
-      logPeriodStart(date);
+      logPeriodStart(selectedDate);
     } else {
-      logPeriodEnd(date);
+      logPeriodEnd(selectedDate);
     }
+  };
+
+  const handleCancel = () => {
+    setSelectedDate(undefined);
+    setShowConfirm(false);
   };
 
   const currentPeriod = getCurrentPeriod();
@@ -155,7 +170,11 @@ export const CycleTracker = () => {
         <Dialog open={showCalendar} onOpenChange={setShowCalendar}>
           <DialogTrigger asChild>
             <Button
-              onClick={() => setIsLoggingStart(true)}
+              onClick={() => {
+                setIsLoggingStart(true);
+                setShowConfirm(false);
+                setSelectedDate(undefined);
+              }}
               className="bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500 text-white py-6"
               size="lg"
             >
@@ -167,13 +186,32 @@ export const CycleTracker = () => {
             <DialogHeader>
               <DialogTitle>Select Period Start Date</DialogTitle>
             </DialogHeader>
-            <div className="flex justify-center">
-              <CalendarComponent
-                mode="single"
-                selected={selectedDate}
-                onSelect={handleDateSelect}
-                className="rounded-md border"
-              />
+            <div className="space-y-4">
+              <div className="flex justify-center">
+                <CalendarComponent
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={handleDateSelect}
+                  className="rounded-md border"
+                />
+              </div>
+              {showConfirm && selectedDate && (
+                <div className="space-y-3">
+                  <p className="text-center text-sm text-gray-600">
+                    Confirm period start date: <strong>{format(selectedDate, "MMM dd, yyyy")}</strong>
+                  </p>
+                  <div className="flex gap-2 justify-center">
+                    <Button onClick={handleConfirm} className="bg-green-500 hover:bg-green-600">
+                      <Check className="w-4 h-4 mr-2" />
+                      Confirm
+                    </Button>
+                    <Button onClick={handleCancel} variant="outline">
+                      <X className="w-4 h-4 mr-2" />
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
@@ -182,7 +220,11 @@ export const CycleTracker = () => {
           <Dialog open={showCalendar} onOpenChange={setShowCalendar}>
             <DialogTrigger asChild>
               <Button
-                onClick={() => setIsLoggingStart(false)}
+                onClick={() => {
+                  setIsLoggingStart(false);
+                  setShowConfirm(false);
+                  setSelectedDate(undefined);
+                }}
                 variant="outline"
                 className="border-pink-300 text-pink-600 hover:bg-pink-50 py-6"
                 size="lg"
@@ -195,13 +237,32 @@ export const CycleTracker = () => {
               <DialogHeader>
                 <DialogTitle>Select Period End Date</DialogTitle>
               </DialogHeader>
-              <div className="flex justify-center">
-                <CalendarComponent
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={handleDateSelect}
-                  className="rounded-md border"
-                />
+              <div className="space-y-4">
+                <div className="flex justify-center">
+                  <CalendarComponent
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                    className="rounded-md border"
+                  />
+                </div>
+                {showConfirm && selectedDate && (
+                  <div className="space-y-3">
+                    <p className="text-center text-sm text-gray-600">
+                      Confirm period end date: <strong>{format(selectedDate, "MMM dd, yyyy")}</strong>
+                    </p>
+                    <div className="flex gap-2 justify-center">
+                      <Button onClick={handleConfirm} className="bg-green-500 hover:bg-green-600">
+                        <Check className="w-4 h-4 mr-2" />
+                        Confirm
+                      </Button>
+                      <Button onClick={handleCancel} variant="outline">
+                        <X className="w-4 h-4 mr-2" />
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </DialogContent>
           </Dialog>
