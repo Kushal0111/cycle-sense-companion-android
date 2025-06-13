@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Calendar, Plus, Droplets, Check, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,15 @@ import { toast } from "@/hooks/use-toast";
 import { format, differenceInDays } from "date-fns";
 import { cycleDB, PeriodEntry } from "@/utils/cycleDatabase";
 
-export const CycleTracker = () => {
+interface CycleTrackerProps {
+  userProfile?: {
+    name: string;
+    age: string;
+    photo: string;
+  };
+}
+
+export const CycleTracker = ({ userProfile }: CycleTrackerProps) => {
   const [periods, setPeriods] = useState<PeriodEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [isLoggingStart, setIsLoggingStart] = useState(true);
@@ -121,10 +128,19 @@ export const CycleTracker = () => {
 
   return (
     <div className="space-y-6">
+      {/* Welcome Message */}
+      {!userProfile?.photo && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
+          <p className="text-amber-700 text-center">
+            👋 Welcome! Please add your profile photo from the menu to personalize your experience.
+          </p>
+        </div>
+      )}
+
       {/* Current Status Card */}
-      <Card className="bg-gradient-to-r from-pink-100 to-purple-100 border-pink-200">
+      <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-pink-700">
+          <CardTitle className="flex items-center gap-2 text-emerald-700">
             <Droplets className="w-5 h-5" />
             Current Status
           </CardTitle>
@@ -132,27 +148,27 @@ export const CycleTracker = () => {
         <CardContent>
           {currentPeriod ? (
             <div className="text-center">
-              <p className="text-lg font-semibold text-pink-700 mb-2">
+              <p className="text-lg font-semibold text-emerald-700 mb-2">
                 Period Active
               </p>
-              <p className="text-pink-600">
+              <p className="text-emerald-600">
                 Day {differenceInDays(new Date(), currentPeriod.startDate) + 1} of current cycle
               </p>
-              <p className="text-sm text-pink-500 mt-1">
+              <p className="text-sm text-emerald-500 mt-1">
                 Started {format(currentPeriod.startDate, "MMM dd, yyyy")}
               </p>
             </div>
           ) : (
             <div className="text-center">
-              <p className="text-lg font-semibold text-purple-700 mb-2">
+              <p className="text-lg font-semibold text-teal-700 mb-2">
                 Period Not Active
               </p>
               {daysSinceLastPeriod !== null ? (
-                <p className="text-purple-600">
+                <p className="text-teal-600">
                   {daysSinceLastPeriod} days since last period
                 </p>
               ) : (
-                <p className="text-purple-600">
+                <p className="text-teal-600">
                   No previous periods logged
                 </p>
               )}
@@ -171,7 +187,7 @@ export const CycleTracker = () => {
                 setShowConfirm(false);
                 setSelectedDate(undefined);
               }}
-              className="bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500 text-white py-6"
+              className="bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-white py-6"
               size="lg"
             >
               <Plus className="w-5 h-5 mr-2" />
@@ -222,7 +238,7 @@ export const CycleTracker = () => {
                   setSelectedDate(undefined);
                 }}
                 variant="outline"
-                className="border-pink-300 text-pink-600 hover:bg-pink-50 py-6"
+                className="border-emerald-300 text-emerald-600 hover:bg-emerald-50 py-6"
                 size="lg"
               >
                 <Calendar className="w-5 h-5 mr-2" />
@@ -269,7 +285,7 @@ export const CycleTracker = () => {
       {periods.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-pink-700">Recent Periods</CardTitle>
+            <CardTitle className="text-emerald-700">Recent Periods</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -279,14 +295,14 @@ export const CycleTracker = () => {
                 .map((period) => (
                   <div
                     key={period.id}
-                    className="flex justify-between items-center p-3 bg-pink-50 rounded-lg"
+                    className="flex justify-between items-center p-3 bg-emerald-50 rounded-lg"
                   >
                     <div>
-                      <p className="font-medium text-pink-700">
+                      <p className="font-medium text-emerald-700">
                         {format(period.startDate, "MMM dd, yyyy")}
                         {period.endDate && ` - ${format(period.endDate, "MMM dd, yyyy")}`}
                       </p>
-                      <p className="text-sm text-pink-600">
+                      <p className="text-sm text-emerald-600">
                         {period.endDate
                           ? `${differenceInDays(period.endDate, period.startDate) + 1} days`
                           : "Ongoing"
@@ -295,7 +311,7 @@ export const CycleTracker = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       {!period.endDate && (
-                        <span className="px-2 py-1 bg-pink-200 text-pink-700 text-xs rounded-full">
+                        <span className="px-2 py-1 bg-emerald-200 text-emerald-700 text-xs rounded-full">
                           Active
                         </span>
                       )}

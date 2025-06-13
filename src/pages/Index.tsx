@@ -1,21 +1,40 @@
 
 import { useState, useEffect } from "react";
-import { Calendar, Heart, Brain, Bell, MessageSquare, Settings } from "lucide-react";
+import { Calendar, Heart, Brain, MessageSquare, Settings, User } from "lucide-react";
 import { CycleTracker } from "@/components/CycleTracker";
 import { CycleCalendar } from "@/components/CycleCalendar";
 import { CyclePrediction } from "@/components/CyclePrediction";
 import { AIConsultation } from "@/components/AIConsultation";
 import { OnboardingModal } from "@/components/OnboardingModal";
+import { Sidebar } from "@/components/Sidebar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+interface UserProfile {
+  name: string;
+  age: string;
+  photo: string;
+}
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("tracker");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile>({
+    name: "",
+    age: "",
+    photo: "",
+  });
 
   useEffect(() => {
     // Check if this is the first visit
     const hasSeenOnboarding = localStorage.getItem("cyclesense-onboarding");
     if (!hasSeenOnboarding) {
       setShowOnboarding(true);
+    }
+
+    // Load user profile
+    const savedProfile = localStorage.getItem("cyclesense-profile");
+    if (savedProfile) {
+      setUserProfile(JSON.parse(savedProfile));
     }
   }, []);
 
@@ -24,17 +43,21 @@ const Index = () => {
     setShowOnboarding(false);
   };
 
+  const handleProfileUpdate = (profile: UserProfile) => {
+    setUserProfile(profile);
+  };
+
   const tabs = [
-    { id: "tracker", label: "Tracker", icon: Calendar, color: "text-rose-600" },
-    { id: "calendar", label: "Calendar", icon: Heart, color: "text-purple-600" },
+    { id: "tracker", label: "Tracker", icon: Calendar, color: "text-emerald-600" },
+    { id: "calendar", label: "Calendar", icon: Heart, color: "text-rose-600" },
     { id: "prediction", label: "Predict", icon: Brain, color: "text-indigo-600" },
-    { id: "consultation", label: "Get Help", icon: MessageSquare, color: "text-emerald-600" },
+    { id: "consultation", label: "Get Help", icon: MessageSquare, color: "text-purple-600" },
   ];
 
   const renderActiveTab = () => {
     switch (activeTab) {
       case "tracker":
-        return <CycleTracker />;
+        return <CycleTracker userProfile={userProfile} />;
       case "calendar":
         return <CycleCalendar />;
       case "prediction":
@@ -42,15 +65,18 @@ const Index = () => {
       case "consultation":
         return <AIConsultation />;
       default:
-        return <CycleTracker />;
+        return <CycleTracker userProfile={userProfile} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-purple-50 to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-rose-50 to-purple-50">
+      {/* Sidebar */}
+      <Sidebar onProfileUpdate={handleProfileUpdate} />
+
       {/* Header */}
-      <header className="bg-white/70 backdrop-blur-md border-b border-rose-200/50 sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4">
+      <header className="bg-white/70 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-40">
+        <div className="container mx-auto px-4 py-4 ml-12">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-r from-rose-400 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
@@ -60,12 +86,36 @@ const Index = () => {
                 CycleSense
               </h1>
             </div>
-            <button className="p-2 rounded-full hover:bg-rose-100/50 transition-colors">
+            <button className="p-2 rounded-full hover:bg-slate-100/50 transition-colors">
               <Settings className="w-6 h-6 text-slate-600" />
             </button>
           </div>
         </div>
       </header>
+
+      {/* Profile Section */}
+      {userProfile.photo && (
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex flex-col items-center space-y-4">
+            <Avatar className="w-24 h-24 border-4 border-white shadow-lg">
+              <AvatarImage src={userProfile.photo} alt="Profile" />
+              <AvatarFallback className="bg-gradient-to-r from-rose-100 to-purple-100 text-rose-600">
+                <User className="w-8 h-8" />
+              </AvatarFallback>
+            </Avatar>
+            {userProfile.name && (
+              <div className="text-center">
+                <h2 className="text-xl font-semibold text-slate-700">
+                  Hello, {userProfile.name}!
+                </h2>
+                {userProfile.age && (
+                  <p className="text-slate-500">Age: {userProfile.age}</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 pb-24">
@@ -85,7 +135,7 @@ const Index = () => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex flex-col items-center py-2 px-3 rounded-lg transition-all ${
                     isActive
-                      ? "bg-gradient-to-r from-rose-400 to-purple-500 text-white shadow-lg"
+                      ? "bg-gradient-to-r from-slate-600 to-slate-700 text-white shadow-lg"
                       : `${tab.color} hover:bg-slate-100/50`
                   }`}
                 >
