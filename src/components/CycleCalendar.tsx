@@ -4,28 +4,18 @@ import { Calendar as CalendarIcon, Droplets, Clock, TrendingUp } from "lucide-re
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
-import { format, differenceInDays, addDays, isSameDay, isWithinInterval } from "date-fns";
-
-interface PeriodEntry {
-  id: string;
-  startDate: Date;
-  endDate?: Date;
-}
+import { format, differenceInDays, isSameDay, isWithinInterval, isBefore, isAfter } from "date-fns";
+import { cycleDB, PeriodEntry } from "@/utils/cycleDatabase";
 
 export const CycleCalendar = () => {
   const [periods, setPeriods] = useState<PeriodEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>();
+  const [prediction, setPrediction] = useState<{ startDate: Date; endDate: Date; ovulationDate: Date } | null>(null);
 
   useEffect(() => {
-    const savedPeriods = localStorage.getItem("cyclesense-periods");
-    if (savedPeriods) {
-      const parsed = JSON.parse(savedPeriods);
-      setPeriods(parsed.map((p: any) => ({
-        ...p,
-        startDate: new Date(p.startDate),
-        endDate: p.endDate ? new Date(p.endDate) : undefined,
-      })));
-    }
+    const data = cycleDB.getCycleData();
+    setPeriods(data.periods);
+    setPrediction(cycleDB.predictNextPeriod());
   }, []);
 
   const getPeriodForDate = (date: Date) => {
@@ -38,6 +28,20 @@ export const CycleCalendar = () => {
     });
   };
 
+  const isLoggedOvulationDay = (date: Date) => {
+    return cycleDB.isOvulationPhase(date) && periods.some(p => p.endDate && isBefore(date, new Date()));
+  };
+
+  const isPredictedPeriodDay = (date: Date) => {
+    if (!prediction) return false;
+    return isWithinInterval(date, { start: prediction.startDate, end: prediction.endDate });
+  };
+
+  const isPredictedOvulationDay = (date: Date) => {
+    if (!prediction) return false;
+    return isSameDay(date, prediction.ovulationDate);
+  };
+
   const getPhaseForDate = (date: Date) => {
     const period = getPeriodForDate(date);
     if (period) {
@@ -45,21 +49,16 @@ export const CycleCalendar = () => {
       return { phase: "Menstrual", day: dayOfPeriod, description: "Period flow" };
     }
 
-    // Check for ovulation and follicular phases
-    const lastPeriod = periods
-      .filter(p => p.endDate && p.endDate < date)
-      .sort((a, b) => b.startDate.getTime() - a.startDate.getTime())[0];
+    if (isLoggedOvulationDay(date)) {
+      return { phase: "Ovulation", day: 1, description: "Fertile window" };
+    }
 
-    if (lastPeriod && lastPeriod.endDate) {
-      const daysSinceLastPeriod = differenceInDays(date, lastPeriod.endDate);
-      
-      if (daysSinceLastPeriod >= 1 && daysSinceLastPeriod <= 6) {
-        return { phase: "Follicular", day: daysSinceLastPeriod, description: "Post-menstrual phase" };
-      } else if (daysSinceLastPeriod >= 7 && daysSinceLastPeriod <= 10) {
-        return { phase: "Ovulation", day: daysSinceLastPeriod - 6, description: "Fertile window" };
-      } else if (daysSinceLastPeriod >= 11 && daysSinceLastPeriod <= 20) {
-        return { phase: "Luteal", day: daysSinceLastPeriod - 10, description: "Pre-menstrual phase" };
-      }
+    if (isPredictedPeriodDay(date)) {
+      return { phase: "Predicted Period", day: differenceInDays(date, prediction!.startDate) + 1, description: "AI predicted period" };
+    }
+
+    if (isPredictedOvulationDay(date)) {
+      return { phase: "Predicted Ovulation", day: 1, description: "AI predicted ovulation" };
     }
 
     return null;
@@ -78,29 +77,27 @@ export const CycleCalendar = () => {
     };
   };
 
-  const isDayHighlighted = (date: Date) => {
-    return !!getPeriodForDate(date);
-  };
-
   const getDayClass = (date: Date) => {
     const period = getPeriodForDate(date);
-    const phase = getPhaseForDate(date);
     
+    // Logged period days - red
     if (period) {
-      return "bg-red-100 text-red-700 hover:bg-red-200";
+      return "bg-red-500 text-white hover:bg-red-600";
     }
     
-    if (phase) {
-      switch (phase.phase) {
-        case "Follicular":
-          return "bg-blue-100 text-blue-700 hover:bg-blue-200";
-        case "Ovulation":
-          return "bg-green-100 text-green-700 hover:bg-green-200";
-        case "Luteal":
-          return "bg-yellow-100 text-yellow-700 hover:bg-yellow-200";
-        default:
-          return "";
-      }
+    // Logged ovulation days - green
+    if (isLoggedOvulationDay(date)) {
+      return "bg-green-500 text-white hover:bg-green-600";
+    }
+    
+    // Predicted period days - light red
+    if (isPredictedPeriodDay(date)) {
+      return "bg-red-200 text-red-800 hover:bg-red-300";
+    }
+    
+    // Predicted ovulation day - light green
+    if (isPredictedOvulationDay(date)) {
+      return "bg-green-200 text-green-800 hover:bg-green-300";
     }
     
     return "";
@@ -120,7 +117,7 @@ export const CycleCalendar = () => {
         </CardHeader>
         <CardContent>
           <p className="text-pink-600 text-sm">
-            Track your menstrual cycle phases throughout the month. Click on any date to see details.
+            Track your menstrual cycle phases throughout the month. Red shows logged periods, green shows ovulation phases.
           </p>
         </CardContent>
       </Card>
@@ -133,12 +130,6 @@ export const CycleCalendar = () => {
             selected={selectedDate}
             onSelect={setSelectedDate}
             className="w-full"
-            modifiers={{
-              highlighted: isDayHighlighted
-            }}
-            modifiersClassNames={{
-              highlighted: "font-bold"
-            }}
             components={{
               Day: ({ date, ...props }) => {
                 const dayClass = getDayClass(date);
@@ -164,20 +155,20 @@ export const CycleCalendar = () => {
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-red-100 border border-red-200 rounded"></div>
-              <span className="text-sm">Menstrual</span>
+              <div className="w-4 h-4 bg-red-500 rounded"></div>
+              <span className="text-sm">Logged Period</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-blue-100 border border-blue-200 rounded"></div>
-              <span className="text-sm">Follicular</span>
+              <div className="w-4 h-4 bg-green-500 rounded"></div>
+              <span className="text-sm">Logged Ovulation</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-100 border border-green-200 rounded"></div>
-              <span className="text-sm">Ovulation</span>
+              <div className="w-4 h-4 bg-red-200 border border-red-300 rounded"></div>
+              <span className="text-sm">Predicted Period</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-yellow-100 border border-yellow-200 rounded"></div>
-              <span className="text-sm">Luteal</span>
+              <div className="w-4 h-4 bg-green-200 border border-green-300 rounded"></div>
+              <span className="text-sm">Predicted Ovulation</span>
             </div>
           </div>
         </CardContent>
@@ -211,14 +202,14 @@ export const CycleCalendar = () => {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-blue-500" />
-                    <Badge variant="secondary">{selectedInfo.phase.phase} Phase</Badge>
+                    <Badge variant="secondary">{selectedInfo.phase.phase}</Badge>
                   </div>
-                  <p className="text-sm text-gray-600">
-                    Day {selectedInfo.phase.day} of {selectedInfo.phase.phase.toLowerCase()} phase
-                  </p>
                   <p className="text-sm text-gray-600">
                     {selectedInfo.phase.description}
                   </p>
+                  {selectedInfo.phase.phase.includes("Predicted") && (
+                    <p className="text-xs text-gray-500">Based on AI prediction</p>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -244,20 +235,28 @@ export const CycleCalendar = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
                 <p className="text-2xl font-bold text-pink-600">
-                  {Math.round(
-                    periods
-                      .filter(p => p.endDate)
-                      .reduce((sum, p) => sum + differenceInDays(p.endDate!, p.startDate) + 1, 0) /
-                    periods.filter(p => p.endDate).length
-                  )}
+                  {cycleDB.getCycleData().averagePeriodLength}
                 </p>
                 <p className="text-sm text-gray-600">Avg. Period Length</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-purple-600">{periods.length}</p>
-                <p className="text-sm text-gray-600">Total Periods Logged</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {cycleDB.getCycleData().averageCycleLength}
+                </p>
+                <p className="text-sm text-gray-600">Avg. Cycle Length</p>
               </div>
             </div>
+            {prediction && (
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <h4 className="font-semibold text-blue-700 mb-2">Next Period Prediction</h4>
+                <p className="text-sm text-blue-600">
+                  Expected: {format(prediction.startDate, "MMM dd")} - {format(prediction.endDate, "MMM dd")}
+                </p>
+                <p className="text-sm text-blue-600">
+                  Ovulation: {format(prediction.ovulationDate, "MMM dd")}
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

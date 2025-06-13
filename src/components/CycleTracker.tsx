@@ -1,18 +1,14 @@
 
 import { useState, useEffect } from "react";
-import { Calendar, Plus, Droplets, Check, X } from "lucide-react";
+import { Calendar, Plus, Droplets, Check, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { format, differenceInDays, addDays } from "date-fns";
-
-interface PeriodEntry {
-  id: string;
-  startDate: Date;
-  endDate?: Date;
-}
+import { format, differenceInDays } from "date-fns";
+import { cycleDB, PeriodEntry } from "@/utils/cycleDatabase";
 
 export const CycleTracker = () => {
   const [periods, setPeriods] = useState<PeriodEntry[]>([]);
@@ -22,20 +18,13 @@ export const CycleTracker = () => {
   const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
-    const savedPeriods = localStorage.getItem("cyclesense-periods");
-    if (savedPeriods) {
-      const parsed = JSON.parse(savedPeriods);
-      setPeriods(parsed.map((p: any) => ({
-        ...p,
-        startDate: new Date(p.startDate),
-        endDate: p.endDate ? new Date(p.endDate) : undefined,
-      })));
-    }
+    const data = cycleDB.getCycleData();
+    setPeriods(data.periods);
   }, []);
 
-  const savePeriods = (newPeriods: PeriodEntry[]) => {
-    setPeriods(newPeriods);
-    localStorage.setItem("cyclesense-periods", JSON.stringify(newPeriods));
+  const refreshData = () => {
+    const data = cycleDB.getCycleData();
+    setPeriods(data.periods);
   };
 
   const getCurrentPeriod = () => {
@@ -63,7 +52,8 @@ export const CycleTracker = () => {
       startDate: date,
     };
 
-    savePeriods([...periods, newPeriod]);
+    cycleDB.addPeriod(newPeriod);
+    refreshData();
     toast({
       title: "Period started",
       description: `Logged period start for ${format(date, "MMM dd, yyyy")}`,
@@ -84,11 +74,8 @@ export const CycleTracker = () => {
       return;
     }
 
-    const updatedPeriods = periods.map(p =>
-      p.id === currentPeriod.id ? { ...p, endDate: date } : p
-    );
-
-    savePeriods(updatedPeriods);
+    cycleDB.updatePeriod(currentPeriod.id, { endDate: date });
+    refreshData();
     toast({
       title: "Period ended",
       description: `Logged period end for ${format(date, "MMM dd, yyyy")}`,
@@ -96,6 +83,15 @@ export const CycleTracker = () => {
     setShowCalendar(false);
     setShowConfirm(false);
     setSelectedDate(undefined);
+  };
+
+  const deletePeriod = (periodId: string) => {
+    cycleDB.deletePeriod(periodId);
+    refreshData();
+    toast({
+      title: "Period deleted",
+      description: "Period entry has been removed.",
+    });
   };
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -297,11 +293,41 @@ export const CycleTracker = () => {
                         }
                       </p>
                     </div>
-                    {!period.endDate && (
-                      <span className="px-2 py-1 bg-pink-200 text-pink-700 text-xs rounded-full">
-                        Active
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {!period.endDate && (
+                        <span className="px-2 py-1 bg-pink-200 text-pink-700 text-xs rounded-full">
+                          Active
+                        </span>
+                      )}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Period Entry</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this period entry? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deletePeriod(period.id)}
+                              className="bg-red-500 hover:bg-red-600"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 ))}
             </div>
