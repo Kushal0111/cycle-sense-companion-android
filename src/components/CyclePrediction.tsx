@@ -1,91 +1,36 @@
 
 import { useState, useEffect } from "react";
-import { Brain, Calendar, TrendingUp, AlertTriangle } from "lucide-react";
+import { Brain, Calendar, TrendingUp, AlertTriangle, Target, Clock, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { format, addDays, differenceInDays } from "date-fns";
-
-interface PeriodEntry {
-  id: string;
-  startDate: Date;
-  endDate?: Date;
-}
-
-interface Prediction {
-  nextPeriodDate: Date;
-  cycleLength: number;
-  confidence: number;
-  irregularityScore: number;
-}
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { format, differenceInDays } from "date-fns";
+import { cycleDB, PredictionResult } from "@/utils/cycleDatabase";
 
 export const CyclePrediction = () => {
-  const [periods, setPeriods] = useState<PeriodEntry[]>([]);
-  const [prediction, setPrediction] = useState<Prediction | null>(null);
+  const [prediction, setPrediction] = useState<PredictionResult | null>(null);
 
   useEffect(() => {
-    const savedPeriods = localStorage.getItem("cyclesense-periods");
-    if (savedPeriods) {
-      const parsed = JSON.parse(savedPeriods);
-      const periodsData = parsed.map((p: any) => ({
-        ...p,
-        startDate: new Date(p.startDate),
-        endDate: p.endDate ? new Date(p.endDate) : undefined,
-      }));
-      setPeriods(periodsData);
-      generatePrediction(periodsData);
-    }
+    const newPrediction = cycleDB.predictNextPeriod();
+    setPrediction(newPrediction);
   }, []);
 
-  const generatePrediction = (periodsData: PeriodEntry[]) => {
-    const completedPeriods = periodsData.filter(p => p.endDate);
-    
-    if (completedPeriods.length < 2) {
-      setPrediction(null);
-      return;
+  const getConfidenceColor = (confidence: string) => {
+    switch (confidence) {
+      case 'high': return "bg-emerald-100 text-emerald-700 border-emerald-200";
+      case 'moderate': return "bg-amber-100 text-amber-700 border-amber-200";
+      case 'low': return "bg-red-100 text-red-700 border-red-200";
+      default: return "bg-slate-100 text-slate-700 border-slate-200";
     }
-
-    // Calculate cycle lengths
-    const cycleLengths: number[] = [];
-    for (let i = 1; i < completedPeriods.length; i++) {
-      const prevPeriod = completedPeriods[i - 1];
-      const currentPeriod = completedPeriods[i];
-      const cycleLength = differenceInDays(currentPeriod.startDate, prevPeriod.startDate);
-      cycleLengths.push(cycleLength);
-    }
-
-    // Calculate average cycle length
-    const avgCycleLength = cycleLengths.reduce((sum, length) => sum + length, 0) / cycleLengths.length;
-
-    // Calculate irregularity score (standard deviation)
-    const variance = cycleLengths.reduce((sum, length) => sum + Math.pow(length - avgCycleLength, 2), 0) / cycleLengths.length;
-    const standardDeviation = Math.sqrt(variance);
-    const irregularityScore = Math.min(standardDeviation / 7, 1); // Normalize to 0-1
-
-    // Calculate confidence based on data consistency
-    const confidence = Math.max(0.3, 1 - irregularityScore);
-
-    // Predict next period
-    const lastPeriod = completedPeriods[completedPeriods.length - 1];
-    const nextPeriodDate = addDays(lastPeriod.startDate, Math.round(avgCycleLength));
-
-    setPrediction({
-      nextPeriodDate,
-      cycleLength: Math.round(avgCycleLength),
-      confidence: Math.round(confidence * 100) / 100,
-      irregularityScore: Math.round(irregularityScore * 100) / 100,
-    });
   };
 
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.8) return "bg-green-100 text-green-700";
-    if (confidence >= 0.6) return "bg-yellow-100 text-yellow-700";
-    return "bg-red-100 text-red-700";
-  };
-
-  const getIrregularityStatus = (score: number) => {
-    if (score <= 0.3) return { label: "Regular", color: "bg-green-100 text-green-700" };
-    if (score <= 0.6) return { label: "Slightly Irregular", color: "bg-yellow-100 text-yellow-700" };
-    return { label: "Irregular", color: "bg-red-100 text-red-700" };
+  const getConfidenceDescription = (confidence: string) => {
+    switch (confidence) {
+      case 'high': return "Based on consistent cycle patterns";
+      case 'moderate': return "Based on available data with some variation";
+      case 'low': return "Limited data available for prediction";
+      default: return "";
+    }
   };
 
   if (!prediction) {
@@ -100,7 +45,7 @@ export const CyclePrediction = () => {
           </CardHeader>
           <CardContent className="text-center">
             <p className="text-purple-600 mb-4">
-              Need at least 2 completed cycles to generate predictions
+              Need at least 1 completed cycle to generate predictions
             </p>
             <p className="text-sm text-purple-500">
               Keep logging your periods to unlock AI-powered predictions and anomaly detection!
@@ -111,8 +56,9 @@ export const CyclePrediction = () => {
     );
   }
 
-  const irregularityStatus = getIrregularityStatus(prediction.irregularityScore);
-  const daysUntilNext = differenceInDays(prediction.nextPeriodDate, new Date());
+  const daysUntilNext = differenceInDays(prediction.startDate, new Date());
+  const windowStart = differenceInDays(prediction.predictionWindow.earliestStart, new Date());
+  const windowEnd = differenceInDays(prediction.predictionWindow.latestStart, new Date());
 
   return (
     <div className="space-y-6">
@@ -121,7 +67,7 @@ export const CyclePrediction = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-purple-700">
             <Brain className="w-5 h-5" />
-            AI Cycle Prediction
+            Advanced AI Cycle Prediction
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -130,12 +76,34 @@ export const CyclePrediction = () => {
               Next Period Predicted
             </h3>
             <p className="text-lg text-purple-600 mb-1">
-              {format(prediction.nextPeriodDate, "EEEE, MMM dd, yyyy")}
+              {format(prediction.startDate, "EEEE, MMM dd, yyyy")}
             </p>
             <p className="text-sm text-purple-500">
               {daysUntilNext > 0 ? `In ${daysUntilNext} days` : 
                daysUntilNext === 0 ? "Today" : 
                `${Math.abs(daysUntilNext)} days overdue`}
+            </p>
+          </div>
+
+          {/* Prediction Window */}
+          <div className="bg-purple-50 rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <Target className="w-4 h-4 text-purple-600" />
+              <span className="font-semibold text-purple-700">Prediction Window</span>
+            </div>
+            <p className="text-sm text-purple-600">
+              Your next period is expected between{" "}
+              <span className="font-semibold">
+                {format(prediction.predictionWindow.earliestStart, "MMM dd")}
+              </span>{" "}
+              and{" "}
+              <span className="font-semibold">
+                {format(prediction.predictionWindow.latestStart, "MMM dd")}
+              </span>
+            </p>
+            <p className="text-xs text-purple-500 mt-1">
+              ({windowStart > 0 ? `${windowStart} to ${windowEnd}` : 
+                windowEnd > 0 ? `Now to ${windowEnd}` : "Within range"} days from today)
             </p>
           </div>
 
@@ -146,101 +114,122 @@ export const CyclePrediction = () => {
                 <span className="text-sm font-medium text-purple-700">Confidence</span>
               </div>
               <Badge className={getConfidenceColor(prediction.confidence)}>
-                {Math.round(prediction.confidence * 100)}%
+                {prediction.confidence.charAt(0).toUpperCase() + prediction.confidence.slice(1)}
               </Badge>
+              <p className="text-xs text-purple-500 mt-1">
+                {getConfidenceDescription(prediction.confidence)}
+              </p>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Calendar className="w-4 h-4 text-purple-600" />
-                <span className="text-sm font-medium text-purple-700">Avg Cycle</span>
+                <span className="text-sm font-medium text-purple-700">Based On</span>
               </div>
               <Badge variant="secondary">
-                {prediction.cycleLength} days
+                {prediction.cyclesUsed} cycle{prediction.cyclesUsed !== 1 ? 's' : ''}
               </Badge>
+              <p className="text-xs text-purple-500 mt-1">
+                Recent cycle data
+              </p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Anomaly Detection */}
+      {/* Cycle Analysis */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-pink-700">
             <AlertTriangle className="w-5 h-5" />
-            Cycle Analysis
+            Detailed Cycle Analysis
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">Cycle Regularity</span>
-                <Badge className={irregularityStatus.color}>
-                  {irregularityStatus.label}
-                </Badge>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-blue-50 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm font-semibold text-blue-700">Cycle Variation</span>
+                </div>
+                <p className="text-lg font-bold text-blue-600">±{prediction.variation} days</p>
+                <p className="text-xs text-blue-500">Standard deviation</p>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-gradient-to-r from-green-400 to-red-400 h-2 rounded-full"
-                  style={{ width: `${prediction.irregularityScore * 100}%` }}
-                ></div>
+              <div className="bg-green-50 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Calendar className="w-4 h-4 text-green-600" />
+                  <span className="text-sm font-semibold text-green-700">Period Duration</span>
+                </div>
+                <p className="text-lg font-bold text-green-600">
+                  {differenceInDays(prediction.endDate, prediction.startDate) + 1} days
+                </p>
+                <p className="text-xs text-green-500">Expected length</p>
               </div>
             </div>
 
-            {prediction.irregularityScore > 0.6 && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <h4 className="font-semibold text-red-700 mb-2">Irregular Cycle Detected</h4>
-                <p className="text-sm text-red-600">
-                  Your cycle shows significant variation. Consider consulting with a healthcare provider 
-                  if this continues or if you experience other symptoms.
-                </p>
-              </div>
+            {prediction.isIrregular && (
+              <Alert className="border-red-200 bg-red-50">
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-700">
+                  <strong>Irregular Cycle Detected:</strong> Your cycles show significant variation. 
+                  This is normal for many people, but consider tracking additional factors like stress, 
+                  diet, or exercise that might influence your cycle.
+                </AlertDescription>
+              </Alert>
             )}
 
-            {prediction.confidence < 0.5 && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h4 className="font-semibold text-yellow-700 mb-2">Low Prediction Confidence</h4>
-                <p className="text-sm text-yellow-600">
-                  Your cycle data shows high variability. Log more cycles for more accurate predictions.
-                </p>
+            {/* Warnings */}
+            {prediction.warnings.length > 0 && (
+              <div className="space-y-2">
+                {prediction.warnings.map((warning, index) => (
+                  <Alert key={index} className="border-amber-200 bg-amber-50">
+                    <Info className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-amber-700">
+                      {warning}
+                    </AlertDescription>
+                  </Alert>
+                ))}
               </div>
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Cycle History */}
+      {/* Scientific Information */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-pink-700">Recent Cycle Lengths</CardTitle>
+          <CardTitle className="text-teal-700">Clinical Guidelines</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {periods
-              .filter(p => p.endDate)
-              .sort((a, b) => b.startDate.getTime() - a.startDate.getTime())
-              .slice(1, 6)
-              .map((period, index, arr) => {
-                if (index === arr.length - 1) return null;
-                const nextPeriod = periods.find(p => 
-                  p.startDate.getTime() > period.startDate.getTime() && p.endDate
-                );
-                if (!nextPeriod) return null;
-                
-                const cycleLength = differenceInDays(nextPeriod.startDate, period.startDate);
-                const isNormal = cycleLength >= 21 && cycleLength <= 35;
-                
-                return (
-                  <div key={period.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                    <span className="text-sm text-gray-600">
-                      {format(period.startDate, "MMM dd")} - {format(nextPeriod.startDate, "MMM dd")}
-                    </span>
-                    <Badge variant={isNormal ? "secondary" : "destructive"}>
-                      {cycleLength} days
-                    </Badge>
-                  </div>
-                );
-              })}
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="bg-teal-50 rounded-lg p-3">
+              <h4 className="font-semibold text-teal-700 mb-2">Normal Cycle Length</h4>
+              <p className="text-teal-600">21-35 days</p>
+              <p className="text-xs text-teal-500 mt-1">According to medical standards</p>
+            </div>
+            <div className="bg-teal-50 rounded-lg p-3">
+              <h4 className="font-semibold text-teal-700 mb-2">Normal Period Duration</h4>
+              <p className="text-teal-600">2-7 days</p>
+              <p className="text-xs text-teal-500 mt-1">Typical bleeding period</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Next Ovulation Prediction */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-emerald-700">Fertility Window</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-emerald-50 rounded-lg p-4">
+            <h4 className="font-semibold text-emerald-700 mb-2">Predicted Ovulation</h4>
+            <p className="text-emerald-600 mb-1">
+              {format(prediction.ovulationDate, "EEEE, MMM dd, yyyy")}
+            </p>
+            <p className="text-sm text-emerald-500">
+              Approximately 14 days before your next period
+            </p>
           </div>
         </CardContent>
       </Card>

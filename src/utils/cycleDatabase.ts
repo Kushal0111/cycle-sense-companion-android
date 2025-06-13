@@ -15,6 +15,21 @@ export interface CycleData {
   averagePeriodLength: number;
 }
 
+export interface PredictionResult {
+  startDate: Date;
+  endDate: Date;
+  ovulationDate: Date;
+  confidence: 'low' | 'moderate' | 'high';
+  predictionWindow: {
+    earliestStart: Date;
+    latestStart: Date;
+  };
+  isIrregular: boolean;
+  cyclesUsed: number;
+  variation: number;
+  warnings: string[];
+}
+
 class CycleDatabase {
   private storageKey = 'cyclesense-data';
 
@@ -88,22 +103,115 @@ class CycleDatabase {
     }
   }
 
-  predictNextPeriod(): { startDate: Date; endDate: Date; ovulationDate: Date } | null {
+  predictNextPeriod(): PredictionResult | null {
     const data = this.getCycleData();
-    const lastPeriod = data.periods
+    const completedPeriods = data.periods
       .filter(p => p.endDate)
-      .sort((a, b) => b.startDate.getTime() - a.startDate.getTime())[0];
+      .sort((a, b) => b.startDate.getTime() - a.startDate.getTime());
 
-    if (!lastPeriod) return null;
+    if (completedPeriods.length === 0) return null;
 
-    const nextStart = addDays(lastPeriod.startDate, data.averageCycleLength);
-    const nextEnd = addDays(nextStart, data.averagePeriodLength - 1);
-    const ovulationDate = addDays(nextStart, -14); // Approx 14 days before next period
+    const lastPeriod = completedPeriods[0];
+    const warnings: string[] = [];
+
+    // Use last 3-6 cycles for prediction (prefer more recent data)
+    const cyclesToUse = Math.min(Math.max(completedPeriods.length - 1, 1), 6);
+    const recentPeriods = completedPeriods.slice(0, cyclesToUse + 1);
+
+    // Calculate cycle lengths from recent periods
+    const cycleLengths: number[] = [];
+    for (let i = 1; i < recentPeriods.length; i++) {
+      const currentPeriod = recentPeriods[i];
+      const previousPeriod = recentPeriods[i - 1];
+      const cycleLength = differenceInDays(previousPeriod.startDate, currentPeriod.startDate);
+      cycleLengths.push(cycleLength);
+    }
+
+    // Calculate average cycle length
+    const averageCycleLength = cycleLengths.length > 0 
+      ? Math.round(cycleLengths.reduce((sum, length) => sum + length, 0) / cycleLengths.length)
+      : 28; // Default if no data
+
+    // Calculate period duration from recent periods
+    const periodDurations = recentPeriods.map(p => 
+      differenceInDays(p.endDate!, p.startDate) + 1
+    );
+    const averagePeriodLength = Math.round(
+      periodDurations.reduce((sum, duration) => sum + duration, 0) / periodDurations.length
+    );
+
+    // Calculate variation (standard deviation)
+    const variation = cycleLengths.length > 1 
+      ? Math.sqrt(cycleLengths.reduce((sum, length) => 
+          sum + Math.pow(length - averageCycleLength, 2), 0) / cycleLengths.length)
+      : 0;
+
+    // Determine confidence level
+    let confidence: 'low' | 'moderate' | 'high' = 'low';
+    if (cycleLengths.length >= 3 && variation <= 3) {
+      confidence = 'high';
+    } else if (cycleLengths.length >= 2 && variation <= 5) {
+      confidence = 'moderate';
+    }
+
+    // Check for irregularity
+    const isIrregular = variation > 7 || cycleLengths.some(length => 
+      Math.abs(length - averageCycleLength) > 7
+    );
+
+    // Add warnings based on data analysis
+    if (cycleLengths.length < 3) {
+      warnings.push("Predictions may be less accurate with fewer than 3 recorded cycles");
+    }
+
+    if (isIrregular) {
+      warnings.push("Your cycles show significant variation. Consider consulting a healthcare provider");
+    }
+
+    // Check if cycles fall outside normal ranges
+    if (averageCycleLength < 21 || averageCycleLength > 35) {
+      warnings.push("Your average cycle length is outside the typical 21-35 day range");
+    }
+
+    if (averagePeriodLength < 2 || averagePeriodLength > 7) {
+      warnings.push("Your average period duration is outside the typical 2-7 day range");
+    }
+
+    // Predict next period dates
+    const nextStart = addDays(lastPeriod.startDate, averageCycleLength);
+    const nextEnd = addDays(nextStart, averagePeriodLength - 1);
+    const ovulationDate = addDays(nextStart, -14); // Approximately 14 days before next period
+
+    // Create prediction window (±3-4 days based on confidence)
+    const windowDays = confidence === 'high' ? 3 : 4;
+    const earliestStart = addDays(nextStart, -windowDays);
+    const latestStart = addDays(nextStart, windowDays);
 
     return {
       startDate: nextStart,
       endDate: nextEnd,
-      ovulationDate
+      ovulationDate,
+      confidence,
+      predictionWindow: {
+        earliestStart,
+        latestStart
+      },
+      isIrregular,
+      cyclesUsed: cycleLengths.length,
+      variation: Math.round(variation * 10) / 10,
+      warnings
+    };
+  }
+
+  // Legacy method for backward compatibility
+  predictNextPeriodLegacy(): { startDate: Date; endDate: Date; ovulationDate: Date } | null {
+    const prediction = this.predictNextPeriod();
+    if (!prediction) return null;
+    
+    return {
+      startDate: prediction.startDate,
+      endDate: prediction.endDate,
+      ovulationDate: prediction.ovulationDate
     };
   }
 
