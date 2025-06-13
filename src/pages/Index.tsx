@@ -1,10 +1,11 @@
 
 import { useState, useEffect } from "react";
-import { Calendar, Heart, Brain, Bell, Settings } from "lucide-react";
+import { Calendar, Heart, Brain, Bell, MessageSquare, Settings } from "lucide-react";
 import { CycleTracker } from "@/components/CycleTracker";
 import { CycleCalendar } from "@/components/CycleCalendar";
 import { CyclePrediction } from "@/components/CyclePrediction";
 import { Reminders } from "@/components/Reminders";
+import { AIConsultation } from "@/components/AIConsultation";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { StickyTips } from "@/components/StickyTips";
 
@@ -29,6 +30,7 @@ const Index = () => {
     { id: "tracker", label: "Tracker", icon: Calendar },
     { id: "calendar", label: "Calendar", icon: Heart },
     { id: "prediction", label: "Predict", icon: Brain },
+    { id: "consultation", label: "AI Help", icon: MessageSquare },
     { id: "reminders", label: "Reminders", icon: Bell },
   ];
 
@@ -40,6 +42,8 @@ const Index = () => {
         return <CycleCalendar />;
       case "prediction":
         return <CyclePrediction />;
+      case "consultation":
+        return <AIConsultation />;
       case "reminders":
         return <Reminders />;
       default:
