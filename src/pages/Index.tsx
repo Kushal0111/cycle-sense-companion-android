@@ -4,10 +4,8 @@ import { Calendar, Heart, Brain, Bell, MessageSquare, Settings } from "lucide-re
 import { CycleTracker } from "@/components/CycleTracker";
 import { CycleCalendar } from "@/components/CycleCalendar";
 import { CyclePrediction } from "@/components/CyclePrediction";
-import { Reminders } from "@/components/Reminders";
 import { AIConsultation } from "@/components/AIConsultation";
 import { OnboardingModal } from "@/components/OnboardingModal";
-import { StickyTips } from "@/components/StickyTips";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("tracker");
@@ -27,11 +25,10 @@ const Index = () => {
   };
 
   const tabs = [
-    { id: "tracker", label: "Tracker", icon: Calendar },
-    { id: "calendar", label: "Calendar", icon: Heart },
-    { id: "prediction", label: "Predict", icon: Brain },
-    { id: "consultation", label: "AI Help", icon: MessageSquare },
-    { id: "reminders", label: "Reminders", icon: Bell },
+    { id: "tracker", label: "Tracker", icon: Calendar, color: "text-rose-600" },
+    { id: "calendar", label: "Calendar", icon: Heart, color: "text-purple-600" },
+    { id: "prediction", label: "Predict", icon: Brain, color: "text-indigo-600" },
+    { id: "consultation", label: "Get Help", icon: MessageSquare, color: "text-emerald-600" },
   ];
 
   const renderActiveTab = () => {
@@ -44,29 +41,27 @@ const Index = () => {
         return <CyclePrediction />;
       case "consultation":
         return <AIConsultation />;
-      case "reminders":
-        return <Reminders />;
       default:
         return <CycleTracker />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-pink-100">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-purple-50 to-indigo-50">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-pink-200 sticky top-0 z-40">
+      <header className="bg-white/70 backdrop-blur-md border-b border-rose-200/50 sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-pink-400 to-purple-400 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-r from-rose-400 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
                 <Heart className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-rose-600 to-purple-600 bg-clip-text text-transparent">
                 CycleSense
               </h1>
             </div>
-            <button className="p-2 rounded-full hover:bg-pink-100 transition-colors">
-              <Settings className="w-6 h-6 text-pink-600" />
+            <button className="p-2 rounded-full hover:bg-rose-100/50 transition-colors">
+              <Settings className="w-6 h-6 text-slate-600" />
             </button>
           </div>
         </div>
@@ -77,11 +72,8 @@ const Index = () => {
         {renderActiveTab()}
       </main>
 
-      {/* Sticky Tips */}
-      <StickyTips />
-
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-pink-200 z-50">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-slate-200/50 z-50">
         <div className="container mx-auto px-4">
           <div className="flex justify-around py-2">
             {tabs.map((tab) => {
@@ -93,8 +85,8 @@ const Index = () => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex flex-col items-center py-2 px-3 rounded-lg transition-all ${
                     isActive
-                      ? "bg-gradient-to-r from-pink-400 to-purple-400 text-white"
-                      : "text-pink-600 hover:bg-pink-50"
+                      ? "bg-gradient-to-r from-rose-400 to-purple-500 text-white shadow-lg"
+                      : `${tab.color} hover:bg-slate-100/50`
                   }`}
                 >
                   <Icon className="w-5 h-5 mb-1" />
