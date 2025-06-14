@@ -193,7 +193,7 @@ export const CycleHealth = () => {
             </div>
             <div className="bg-indigo-50 rounded-lg p-3">
               <h4 className="font-semibold text-indigo-700 mb-2">Irregularity Threshold</h4>
-              <p className="text-indigo-600">>7 days variation</p>
+              <p className="text-indigo-600">{'>'}7 days variation</p>
               <p className="text-xs text-indigo-500 mt-1">When to consider medical advice</p>
             </div>
           </div>
