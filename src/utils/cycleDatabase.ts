@@ -1,4 +1,3 @@
-
 import { differenceInDays, addDays, format } from "date-fns";
 
 export interface PeriodEntry {
@@ -7,6 +6,7 @@ export interface PeriodEntry {
   endDate?: Date;
   symptoms?: string[];
   flow?: 'light' | 'normal' | 'heavy';
+  timestamp: Date;
 }
 
 export interface CycleData {
@@ -30,32 +30,78 @@ export interface PredictionResult {
   warnings: string[];
 }
 
+export interface HealthAnalysis {
+  status: 'healthy' | 'irregular' | 'concerning' | 'insufficient_data';
+  message: string;
+  details: {
+    averageCycleLength: number;
+    standardDeviation: number;
+    cycleLengths: number[];
+    irregularityCount: number;
+    totalCycles: number;
+  };
+  recommendations: string[];
+  severity: 'low' | 'medium' | 'high';
+}
+
 class CycleDatabase {
   private storageKey = 'cyclesense-data';
+  private backupKey = 'cyclesense-backup';
 
   getCycleData(): CycleData {
-    const savedData = localStorage.getItem(this.storageKey);
-    if (savedData) {
-      const parsed = JSON.parse(savedData);
-      return {
-        ...parsed,
-        periods: parsed.periods.map((p: any) => ({
-          ...p,
-          startDate: new Date(p.startDate),
-          endDate: p.endDate ? new Date(p.endDate) : undefined,
-        }))
-      };
+    try {
+      const savedData = localStorage.getItem(this.storageKey);
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        return {
+          ...parsed,
+          periods: parsed.periods.map((p: any) => ({
+            ...p,
+            startDate: new Date(p.startDate),
+            endDate: p.endDate ? new Date(p.endDate) : undefined,
+            timestamp: p.timestamp ? new Date(p.timestamp) : new Date(),
+          }))
+        };
+      }
+    } catch (error) {
+      console.error('Error loading cycle data:', error);
+      this.restoreFromBackup();
     }
     return { periods: [], averageCycleLength: 28, averagePeriodLength: 5 };
   }
 
   saveCycleData(data: CycleData): void {
-    localStorage.setItem(this.storageKey, JSON.stringify(data));
+    try {
+      // Create backup before saving
+      const currentData = localStorage.getItem(this.storageKey);
+      if (currentData) {
+        localStorage.setItem(this.backupKey, currentData);
+      }
+      
+      localStorage.setItem(this.storageKey, JSON.stringify(data));
+    } catch (error) {
+      console.error('Error saving cycle data:', error);
+    }
+  }
+
+  private restoreFromBackup(): void {
+    try {
+      const backup = localStorage.getItem(this.backupKey);
+      if (backup) {
+        localStorage.setItem(this.storageKey, backup);
+      }
+    } catch (error) {
+      console.error('Error restoring from backup:', error);
+    }
   }
 
   addPeriod(period: PeriodEntry): void {
     const data = this.getCycleData();
-    data.periods.push(period);
+    const newPeriod = {
+      ...period,
+      timestamp: new Date()
+    };
+    data.periods.push(newPeriod);
     this.updateAverages(data);
     this.saveCycleData(data);
   }
@@ -103,6 +149,123 @@ class CycleDatabase {
     }
   }
 
+  analyzeCycleHealth(): HealthAnalysis {
+    const data = this.getCycleData();
+    const completedPeriods = data.periods
+      .filter(p => p.endDate)
+      .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+
+    if (completedPeriods.length < 3) {
+      return {
+        status: 'insufficient_data',
+        message: 'Not enough data to analyze cycle health. Log at least 3 complete cycles for analysis.',
+        details: {
+          averageCycleLength: 0,
+          standardDeviation: 0,
+          cycleLengths: [],
+          irregularityCount: 0,
+          totalCycles: completedPeriods.length
+        },
+        recommendations: [
+          'Continue logging your periods consistently',
+          'Track at least 3 complete cycles for meaningful analysis'
+        ],
+        severity: 'low'
+      };
+    }
+
+    // Calculate cycle lengths
+    const cycleLengths: number[] = [];
+    for (let i = 1; i < completedPeriods.length; i++) {
+      const prevStart = completedPeriods[i - 1].startDate;
+      const currentStart = completedPeriods[i].startDate;
+      const cycleLength = differenceInDays(currentStart, prevStart);
+      cycleLengths.push(cycleLength);
+    }
+
+    // Calculate statistics
+    const averageCycleLength = cycleLengths.reduce((sum, length) => sum + length, 0) / cycleLengths.length;
+    const variance = cycleLengths.reduce((sum, length) => sum + Math.pow(length - averageCycleLength, 2), 0) / cycleLengths.length;
+    const standardDeviation = Math.sqrt(variance);
+
+    // Check for irregularities
+    const irregularCycles = cycleLengths.filter(length => 
+      Math.abs(length - averageCycleLength) > 7
+    );
+    const irregularityCount = irregularCycles.length;
+
+    // Check period durations
+    const periodDurations = completedPeriods.map(p => 
+      differenceInDays(p.endDate!, p.startDate) + 1
+    );
+    const longPeriods = periodDurations.filter(duration => duration > 7);
+
+    // Determine health status
+    let status: HealthAnalysis['status'] = 'healthy';
+    let message = '';
+    let recommendations: string[] = [];
+    let severity: HealthAnalysis['severity'] = 'low';
+
+    // Check for concerning patterns
+    const isAverageCycleOutOfRange = averageCycleLength < 21 || averageCycleLength > 35;
+    const hasHighVariation = standardDeviation > 7;
+    const hasFrequentIrregularities = irregularityCount >= Math.ceil(cycleLengths.length * 0.5);
+    const hasLongPeriods = longPeriods.length > 0;
+
+    if (isAverageCycleOutOfRange || hasHighVariation || hasFrequentIrregularities || hasLongPeriods) {
+      if (isAverageCycleOutOfRange && (averageCycleLength < 21 || averageCycleLength > 45)) {
+        status = 'concerning';
+        severity = 'high';
+        message = 'Your cycle length is significantly outside the normal range. We strongly recommend consulting a gynecologist.';
+        recommendations.push('Schedule an appointment with a gynecologist as soon as possible');
+        recommendations.push('Track any additional symptoms or changes');
+      } else if (hasHighVariation && standardDeviation > 10) {
+        status = 'concerning';
+        severity = 'medium';
+        message = 'Your cycles show high variability, which may indicate hormonal imbalances.';
+        recommendations.push('Consider consulting a healthcare provider');
+        recommendations.push('Track stress levels, diet, and exercise patterns');
+      } else {
+        status = 'irregular';
+        severity = 'medium';
+        message = 'Your cycles show some irregularity. This is common but worth monitoring.';
+        recommendations.push('Continue tracking your cycles consistently');
+        recommendations.push('Consider lifestyle factors that might affect your cycle');
+      }
+
+      if (hasLongPeriods) {
+        recommendations.push('Periods lasting more than 7 days should be discussed with a healthcare provider');
+      }
+
+      if (isAverageCycleOutOfRange) {
+        if (averageCycleLength < 21) {
+          recommendations.push('Short cycles may indicate hormonal issues');
+        } else {
+          recommendations.push('Long cycles may indicate PCOS or other conditions');
+        }
+      }
+    } else {
+      status = 'healthy';
+      message = 'Your menstrual cycles appear regular and within normal ranges.';
+      recommendations.push('Continue your current health practices');
+      recommendations.push('Keep tracking your cycles for ongoing health awareness');
+    }
+
+    return {
+      status,
+      message,
+      details: {
+        averageCycleLength: Math.round(averageCycleLength * 10) / 10,
+        standardDeviation: Math.round(standardDeviation * 10) / 10,
+        cycleLengths,
+        irregularityCount,
+        totalCycles: cycleLengths.length
+      },
+      recommendations,
+      severity
+    };
+  }
+
   predictNextPeriod(): PredictionResult | null {
     const data = this.getCycleData();
     const completedPeriods = data.periods
@@ -126,7 +289,7 @@ class CycleDatabase {
       const cycleLength = differenceInDays(previousPeriod.startDate, currentPeriod.startDate);
       cycleLengths.push(cycleLength);
     }
-
+    
     // Calculate average cycle length
     const averageCycleLength = cycleLengths.length > 0 
       ? Math.round(cycleLengths.reduce((sum, length) => sum + length, 0) / cycleLengths.length)
@@ -203,7 +366,6 @@ class CycleDatabase {
     };
   }
 
-  // Legacy method for backward compatibility
   predictNextPeriodLegacy(): { startDate: Date; endDate: Date; ovulationDate: Date } | null {
     const prediction = this.predictNextPeriod();
     if (!prediction) return null;

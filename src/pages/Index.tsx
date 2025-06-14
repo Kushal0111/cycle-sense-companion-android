@@ -4,6 +4,7 @@ import { Calendar, Heart, Brain, MessageSquare, Settings, User } from "lucide-re
 import { CycleTracker } from "@/components/CycleTracker";
 import { CycleCalendar } from "@/components/CycleCalendar";
 import { CyclePrediction } from "@/components/CyclePrediction";
+import { CycleHealth } from "@/components/CycleHealth";
 import { AIConsultation } from "@/components/AIConsultation";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { Sidebar } from "@/components/Sidebar";
@@ -51,7 +52,8 @@ const Index = () => {
     { id: "tracker", label: "Tracker", icon: Calendar, color: "text-emerald-600" },
     { id: "calendar", label: "Calendar", icon: Heart, color: "text-rose-600" },
     { id: "prediction", label: "Predict", icon: Brain, color: "text-indigo-600" },
-    { id: "consultation", label: "Get Help", icon: MessageSquare, color: "text-purple-600" },
+    { id: "health", label: "Health", icon: Heart, color: "text-purple-600" },
+    { id: "consultation", label: "Get Help", icon: MessageSquare, color: "text-teal-600" },
   ];
 
   const renderActiveTab = () => {
@@ -62,6 +64,8 @@ const Index = () => {
         return <CycleCalendar />;
       case "prediction":
         return <CyclePrediction />;
+      case "health":
+        return <CycleHealth />;
       case "consultation":
         return <AIConsultation />;
       default:
