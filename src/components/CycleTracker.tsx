@@ -57,6 +57,7 @@ export const CycleTracker = ({ userProfile }: CycleTrackerProps) => {
     const newPeriod: PeriodEntry = {
       id: Date.now().toString(),
       startDate: date,
+      timestamp: new Date(),
     };
 
     cycleDB.addPeriod(newPeriod);
