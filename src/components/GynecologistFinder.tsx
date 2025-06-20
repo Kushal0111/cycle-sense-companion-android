@@ -87,7 +87,7 @@ export const GynecologistFinder = () => {
       <Card className="border-teal-200 bg-gradient-to-br from-teal-50 to-cyan-50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-teal-700">
-            <MapPin className="w-5 h-5" />
+            <MapPin className="w-5 h-5 transition-all duration-300 hover:scale-110 hover:bounce" />
             Find Gynecologists Nearby
           </CardTitle>
         </CardHeader>
@@ -97,14 +97,14 @@ export const GynecologistFinder = () => {
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="Enter your location (city, area, or zip code)"
-              className="border-teal-200 focus:border-teal-400"
+              className="border-teal-200 focus:border-teal-400 transition-all duration-300 focus:scale-105"
             />
             <Button 
               onClick={handleSearch} 
               disabled={loading}
-              className="bg-teal-500 hover:bg-teal-600 shrink-0"
+              className="bg-teal-500 hover:bg-teal-600 shrink-0 transition-all duration-300 hover:scale-105 hover:shadow-lg"
             >
-              <Search className="w-4 h-4 mr-2" />
+              <Search className="w-4 h-4 mr-2 transition-transform duration-300 hover:rotate-12" />
               {loading ? "Searching..." : "Search"}
             </Button>
           </div>
@@ -121,7 +121,7 @@ export const GynecologistFinder = () => {
             Gynecologists near {location}
           </h3>
           {gynecologists.map((doctor) => (
-            <Card key={doctor.id} className="border-teal-100 hover:shadow-md transition-shadow">
+            <Card key={doctor.id} className="border-teal-100 hover:shadow-md transition-all duration-300 hover:scale-105">
               <CardContent className="p-4">
                 <div className="space-y-3">
                   <div className="flex justify-between items-start">
@@ -130,18 +130,18 @@ export const GynecologistFinder = () => {
                       <p className="text-teal-600 text-sm">{doctor.clinic}</p>
                     </div>
                     <div className="flex items-center gap-1 text-yellow-500">
-                      <Star className="w-4 h-4 fill-current" />
+                      <Star className="w-4 h-4 fill-current transition-transform duration-300 hover:scale-110" />
                       <span className="text-sm text-gray-600">{doctor.rating}</span>
                     </div>
                   </div>
                   
                   <div className="space-y-2 text-sm text-gray-600">
                     <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-teal-500" />
+                      <MapPin className="w-4 h-4 text-teal-500 transition-transform duration-300 hover:scale-110" />
                       <span>{doctor.address} • {doctor.distance}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-teal-500" />
+                      <Clock className="w-4 h-4 text-teal-500 transition-transform duration-300 hover:scale-110" />
                       <span>{doctor.availability}</span>
                     </div>
                   </div>
@@ -150,9 +150,9 @@ export const GynecologistFinder = () => {
                     onClick={() => handleCall(doctor.phone)}
                     variant="outline"
                     size="sm"
-                    className="w-full border-teal-200 text-teal-700 hover:bg-teal-50"
+                    className="w-full border-teal-200 text-teal-700 hover:bg-teal-50 transition-all duration-300 hover:scale-105"
                   >
-                    <Phone className="w-4 h-4 mr-2" />
+                    <Phone className="w-4 h-4 mr-2 transition-transform duration-300 hover:scale-110" />
                     Call {doctor.phone}
                   </Button>
                 </div>

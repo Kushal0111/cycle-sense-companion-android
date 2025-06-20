@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Calendar, Plus, Droplets, Check, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -142,7 +143,7 @@ export const CycleTracker = ({ userProfile }: CycleTrackerProps) => {
       <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-emerald-700">
-            <Droplets className="w-5 h-5" />
+            <Droplets className="w-5 h-5 transition-all duration-300 hover:scale-110 hover:rotate-12" />
             Current Status
           </CardTitle>
         </CardHeader>
@@ -188,10 +189,10 @@ export const CycleTracker = ({ userProfile }: CycleTrackerProps) => {
                 setShowConfirm(false);
                 setSelectedDate(undefined);
               }}
-              className="bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-white py-6"
+              className="bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-white py-6 transition-all duration-300 hover:scale-105 hover:shadow-lg"
               size="lg"
             >
-              <Plus className="w-5 h-5 mr-2" />
+              <Plus className="w-5 h-5 mr-2 transition-transform duration-300 hover:rotate-90" />
               Log Period Start
             </Button>
           </DialogTrigger>
@@ -214,12 +215,12 @@ export const CycleTracker = ({ userProfile }: CycleTrackerProps) => {
                     Confirm period start date: <strong>{format(selectedDate, "MMM dd, yyyy")}</strong>
                   </p>
                   <div className="flex gap-2 justify-center">
-                    <Button onClick={handleConfirm} className="bg-green-500 hover:bg-green-600">
-                      <Check className="w-4 h-4 mr-2" />
+                    <Button onClick={handleConfirm} className="bg-green-500 hover:bg-green-600 transition-all duration-300 hover:scale-105">
+                      <Check className="w-4 h-4 mr-2 transition-transform duration-300 hover:scale-110" />
                       Confirm
                     </Button>
-                    <Button onClick={handleCancel} variant="outline">
-                      <X className="w-4 h-4 mr-2" />
+                    <Button onClick={handleCancel} variant="outline" className="transition-all duration-300 hover:scale-105">
+                      <X className="w-4 h-4 mr-2 transition-transform duration-300 hover:rotate-90" />
                       Cancel
                     </Button>
                   </div>
@@ -239,10 +240,10 @@ export const CycleTracker = ({ userProfile }: CycleTrackerProps) => {
                   setSelectedDate(undefined);
                 }}
                 variant="outline"
-                className="border-emerald-300 text-emerald-600 hover:bg-emerald-50 py-6"
+                className="border-emerald-300 text-emerald-600 hover:bg-emerald-50 py-6 transition-all duration-300 hover:scale-105 hover:shadow-md"
                 size="lg"
               >
-                <Calendar className="w-5 h-5 mr-2" />
+                <Calendar className="w-5 h-5 mr-2 transition-transform duration-300 hover:scale-110" />
                 Log Period End
               </Button>
             </DialogTrigger>
@@ -265,12 +266,12 @@ export const CycleTracker = ({ userProfile }: CycleTrackerProps) => {
                       Confirm period end date: <strong>{format(selectedDate, "MMM dd, yyyy")}</strong>
                     </p>
                     <div className="flex gap-2 justify-center">
-                      <Button onClick={handleConfirm} className="bg-green-500 hover:bg-green-600">
-                        <Check className="w-4 h-4 mr-2" />
+                      <Button onClick={handleConfirm} className="bg-green-500 hover:bg-green-600 transition-all duration-300 hover:scale-105">
+                        <Check className="w-4 h-4 mr-2 transition-transform duration-300 hover:scale-110" />
                         Confirm
                       </Button>
-                      <Button onClick={handleCancel} variant="outline">
-                        <X className="w-4 h-4 mr-2" />
+                      <Button onClick={handleCancel} variant="outline" className="transition-all duration-300 hover:scale-105">
+                        <X className="w-4 h-4 mr-2 transition-transform duration-300 hover:rotate-90" />
                         Cancel
                       </Button>
                     </div>
@@ -296,7 +297,7 @@ export const CycleTracker = ({ userProfile }: CycleTrackerProps) => {
                 .map((period) => (
                   <div
                     key={period.id}
-                    className="flex justify-between items-center p-3 bg-emerald-50 rounded-lg"
+                    className="flex justify-between items-center p-3 bg-emerald-50 rounded-lg transition-all duration-300 hover:bg-emerald-100 hover:shadow-md"
                   >
                     <div>
                       <p className="font-medium text-emerald-700">
@@ -321,9 +322,9 @@ export const CycleTracker = ({ userProfile }: CycleTrackerProps) => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 transition-all duration-300 hover:scale-110"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4 transition-transform duration-300 hover:scale-110" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -334,10 +335,10 @@ export const CycleTracker = ({ userProfile }: CycleTrackerProps) => {
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel className="transition-all duration-300 hover:scale-105">Cancel</AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() => deletePeriod(period.id)}
-                              className="bg-red-500 hover:bg-red-600"
+                              className="bg-red-500 hover:bg-red-600 transition-all duration-300 hover:scale-105"
                             >
                               Delete
                             </AlertDialogAction>

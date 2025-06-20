@@ -52,9 +52,9 @@ export const Sidebar = ({ onProfileUpdate }: SidebarProps) => {
         <Button 
           variant="ghost" 
           size="icon"
-          className="fixed top-4 left-4 z-50 bg-white/80 backdrop-blur-sm hover:bg-white/90 shadow-md"
+          className="fixed top-4 left-4 z-50 bg-white/80 backdrop-blur-sm hover:bg-white/90 shadow-md transition-all duration-300 hover:scale-110 hover:shadow-lg"
         >
-          <Menu className="w-6 h-6 text-slate-700" />
+          <Menu className="w-6 h-6 text-slate-700 transition-transform duration-300 hover:rotate-12" />
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-80 p-0">
@@ -71,13 +71,13 @@ export const Sidebar = ({ onProfileUpdate }: SidebarProps) => {
                 <button
                   key={item.id}
                   onClick={() => setActiveSection(item.id)}
-                  className={`w-full flex items-center gap-3 px-6 py-4 text-left transition-colors ${
+                  className={`w-full flex items-center gap-3 px-6 py-4 text-left transition-all duration-300 hover:scale-105 ${
                     activeSection === item.id
                       ? "bg-white/70 border-r-2 border-rose-400"
                       : "hover:bg-white/50"
                   }`}
                 >
-                  <Icon className={`w-5 h-5 ${item.color}`} />
+                  <Icon className={`w-5 h-5 ${item.color} transition-transform duration-300 hover:scale-110`} />
                   <span className={`font-medium ${item.color}`}>
                     {item.label}
                   </span>

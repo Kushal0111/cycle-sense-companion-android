@@ -83,15 +83,15 @@ const Index = () => {
         <div className="container mx-auto px-4 py-4 ml-12">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-rose-400 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
-                <Heart className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 bg-gradient-to-r from-rose-400 to-purple-500 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl">
+                <Heart className="w-6 h-6 text-white transition-transform duration-300 hover:scale-110" />
               </div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-rose-600 to-purple-600 bg-clip-text text-transparent">
                 CycleSense
               </h1>
             </div>
-            <button className="p-2 rounded-full hover:bg-slate-100/50 transition-colors">
-              <Settings className="w-6 h-6 text-slate-600" />
+            <button className="p-2 rounded-full hover:bg-slate-100/50 transition-all duration-300 hover:scale-110 hover:rotate-12">
+              <Settings className="w-6 h-6 text-slate-600 transition-transform duration-300 hover:scale-110" />
             </button>
           </div>
         </div>
@@ -101,10 +101,10 @@ const Index = () => {
       {userProfile.photo && (
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col items-center space-y-4">
-            <Avatar className="w-24 h-24 border-4 border-white shadow-lg">
+            <Avatar className="w-24 h-24 border-4 border-white shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl">
               <AvatarImage src={userProfile.photo} alt="Profile" />
               <AvatarFallback className="bg-gradient-to-r from-rose-100 to-purple-100 text-rose-600">
-                <User className="w-8 h-8" />
+                <User className="w-8 h-8 transition-transform duration-300 hover:scale-110" />
               </AvatarFallback>
             </Avatar>
             {userProfile.name && (
@@ -137,13 +137,13 @@ const Index = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex flex-col items-center py-2 px-3 rounded-lg transition-all ${
+                  className={`flex flex-col items-center py-2 px-3 rounded-lg transition-all duration-300 hover:scale-105 ${
                     isActive
-                      ? "bg-gradient-to-r from-slate-600 to-slate-700 text-white shadow-lg"
+                      ? "bg-gradient-to-r from-slate-600 to-slate-700 text-white shadow-lg scale-105"
                       : `${tab.color} hover:bg-slate-100/50`
                   }`}
                 >
-                  <Icon className="w-5 h-5 mb-1" />
+                  <Icon className={`w-5 h-5 mb-1 transition-transform duration-300 ${isActive ? 'scale-110' : 'hover:scale-110'}`} />
                   <span className="text-xs font-medium">{tab.label}</span>
                 </button>
               );
