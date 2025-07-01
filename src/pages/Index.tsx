@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { Calendar, Heart, Brain, MessageSquare, Settings, User, LogOut } from "lucide-react";
+import { Calendar, Heart, Brain, MessageSquare, Settings, User, LogOut, Baby, Lightbulb, Pill } from "lucide-react";
 import { CycleTracker } from "@/components/CycleTracker";
 import { CycleCalendar } from "@/components/CycleCalendar";
 import { CyclePrediction } from "@/components/CyclePrediction";
@@ -12,6 +11,10 @@ import { Login } from "@/components/Login";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { MoodTracker } from "@/components/MoodTracker";
+import { FertilityCalendar } from "@/components/FertilityCalendar";
+import { CycleRecommendations } from "@/components/CycleRecommendations";
+import { PillReminder } from "@/components/PillReminder";
 
 interface UserProfile {
   name: string;
@@ -104,6 +107,10 @@ const Index = () => {
   const tabs = [
     { id: "tracker", label: "Tracker", icon: Calendar, color: "text-emerald-600" },
     { id: "calendar", label: "Calendar", icon: Heart, color: "text-rose-600" },
+    { id: "fertility", label: "Fertility", icon: Baby, color: "text-green-600" },
+    { id: "mood", label: "Mood", icon: Brain, color: "text-purple-600" },
+    { id: "recommendations", label: "Tips", icon: Lightbulb, color: "text-amber-600" },
+    { id: "pills", label: "Pills", icon: Pill, color: "text-blue-600" },
     { id: "prediction", label: "Predict", icon: Brain, color: "text-indigo-600" },
     { id: "health", label: "Health", icon: Heart, color: "text-purple-600" },
     { id: "consultation", label: "Get Help", icon: MessageSquare, color: "text-teal-600" },
@@ -115,6 +122,14 @@ const Index = () => {
         return <CycleTracker userProfile={userProfile} />;
       case "calendar":
         return <CycleCalendar />;
+      case "fertility":
+        return <FertilityCalendar />;
+      case "mood":
+        return <MoodTracker />;
+      case "recommendations":
+        return <CycleRecommendations />;
+      case "pills":
+        return <PillReminder />;
       case "prediction":
         return <CyclePrediction />;
       case "health":
