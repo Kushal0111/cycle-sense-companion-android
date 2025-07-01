@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -99,5 +100,33 @@
 
   body {
     @apply bg-background text-foreground;
+    /* Prevent zoom and unwanted touch behaviors */
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Prevent zoom on input focus */
+  input, select, textarea {
+    font-size: 16px !important;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+  }
+
+  /* Prevent horizontal scrolling */
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  /* Disable pull-to-refresh */
+  body {
+    overscroll-behavior: none;
   }
 }
