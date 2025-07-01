@@ -1,10 +1,10 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, MessageSquare, Send, Bot } from "lucide-react";
+import { AlertTriangle, MessageSquare, Send, Bot, Bell, BellOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export const AIConsultation = () => {
@@ -13,18 +13,69 @@ export const AIConsultation = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [hasAcceptedDisclaimer, setHasAcceptedDisclaimer] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
   const { toast } = useToast();
 
-  const handleSubmit = async () => {
-    if (!hasAcceptedDisclaimer) {
-      toast({
-        title: "Please accept the disclaimer",
-        description: "You must read and accept the health disclaimer before proceeding.",
-        variant: "destructive",
-      });
-      return;
+  useEffect(() => {
+    // Check if disclaimer was previously accepted
+    const disclaimerAccepted = localStorage.getItem("cyclesense-disclaimer-accepted");
+    if (disclaimerAccepted === "true") {
+      setHasAcceptedDisclaimer(true);
     }
 
+    // Check current notification permission
+    if ("Notification" in window) {
+      setNotificationPermission(Notification.permission);
+    }
+
+    // Load saved API key
+    const savedApiKey = localStorage.getItem("cyclesense-openai-key");
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
+    }
+  }, []);
+
+  const handleDisclaimerChange = (accepted: boolean) => {
+    setHasAcceptedDisclaimer(accepted);
+    localStorage.setItem("cyclesense-disclaimer-accepted", accepted.toString());
+  };
+
+  const requestNotificationPermission = async () => {
+    if ("Notification" in window) {
+      try {
+        const permission = await Notification.requestPermission();
+        setNotificationPermission(permission);
+        
+        if (permission === "granted") {
+          toast({
+            title: "Notifications Enabled",
+            description: "You'll now receive health reminders and updates.",
+          });
+          
+          // Show a test notification
+          new Notification("CycleSense", {
+            body: "Notifications are now enabled! You'll receive health tips and reminders.",
+            icon: "/favicon.ico"
+          });
+        } else {
+          toast({
+            title: "Notifications Disabled",
+            description: "You can enable notifications later in your browser settings.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error("Error requesting notification permission:", error);
+        toast({
+          title: "Error",
+          description: "Failed to enable notifications. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleSubmit = async () => {
     if (!question.trim()) {
       toast({
         title: "Please enter your question",
@@ -46,6 +97,9 @@ export const AIConsultation = () => {
     setIsLoading(true);
     
     try {
+      // Save API key for future use
+      localStorage.setItem("cyclesense-openai-key", apiKey);
+
       const healthPrompt = `You are a knowledgeable AI assistant providing general gynecological and women's health information. 
 
 IMPORTANT DISCLAIMERS:
@@ -79,7 +133,8 @@ Please provide helpful, accurate general information while emphasizing the impor
       });
 
       if (!openAIResponse.ok) {
-        throw new Error('Failed to get AI response');
+        const errorData = await openAIResponse.json();
+        throw new Error(`API Error: ${errorData.error?.message || 'Failed to get AI response'}`);
       }
 
       const data = await openAIResponse.json();
@@ -96,11 +151,19 @@ This information is for educational purposes only and is not intended to replace
         title: "AI Response Generated",
         description: "Please remember this is for informational purposes only.",
       });
+
+      // Show notification if permission granted
+      if (notificationPermission === "granted") {
+        new Notification("CycleSense AI", {
+          body: "Your health consultation response is ready!",
+          icon: "/favicon.ico"
+        });
+      }
     } catch (error) {
       console.error('Error calling OpenAI API:', error);
       toast({
         title: "Error",
-        description: "Failed to get AI response. Please check your API key and try again.",
+        description: error instanceof Error ? error.message : "Failed to get AI response. Please check your API key and try again.",
         variant: "destructive",
       });
     } finally {
@@ -114,7 +177,7 @@ This information is for educational purposes only and is not intended to replace
       <Card className="bg-gradient-to-r from-blue-100 to-purple-100 border-blue-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-blue-700">
-            <Bot className="w-5 h-5" />
+            <Bot className="w-5 h-5 transition-all duration-300 hover:scale-110 hover:rotate-12" />
             AI Health Consultation
           </CardTitle>
         </CardHeader>
@@ -125,40 +188,73 @@ This information is for educational purposes only and is not intended to replace
         </CardContent>
       </Card>
 
-      {/* Legal Disclaimer */}
-      <Card className="border-orange-200 bg-orange-50">
+      {/* Notification Permission */}
+      <Card className="border-green-200 bg-green-50">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-orange-700 text-lg">
-            <AlertTriangle className="w-5 h-5" />
-            Important Medical Disclaimer
+          <CardTitle className="flex items-center gap-2 text-green-700 text-lg">
+            {notificationPermission === "granted" ? (
+              <Bell className="w-5 h-5 transition-all duration-300 hover:scale-110" />
+            ) : (
+              <BellOff className="w-5 h-5 transition-all duration-300 hover:scale-110" />
+            )}
+            Notifications
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="text-sm text-orange-800 space-y-2">
-            <p><strong>READ CAREFULLY BEFORE PROCEEDING:</strong></p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>This AI consultation is for <strong>informational and educational purposes ONLY</strong></li>
-              <li>This is <strong>NOT a substitute</strong> for professional medical advice, diagnosis, or treatment</li>
-              <li>Always consult with qualified healthcare providers for any health concerns</li>
-              <li>Do not disregard professional medical advice based on information provided here</li>
-              <li>In case of medical emergency, contact emergency services immediately</li>
-              <li>We take <strong>NO RESPONSIBILITY</strong> for any consequences of using this information</li>
-            </ul>
-          </div>
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="disclaimer"
-              checked={hasAcceptedDisclaimer}
-              onChange={(e) => setHasAcceptedDisclaimer(e.target.checked)}
-              className="rounded"
-            />
-            <label htmlFor="disclaimer" className="text-sm font-medium text-orange-800">
-              I understand and accept the above disclaimers
-            </label>
-          </div>
+          <p className="text-sm text-green-800">
+            {notificationPermission === "granted" 
+              ? "✅ Notifications are enabled! You'll receive health reminders and updates."
+              : "Enable notifications to receive health tips, reminders, and consultation updates."
+            }
+          </p>
+          {notificationPermission !== "granted" && (
+            <Button 
+              onClick={requestNotificationPermission}
+              className="bg-green-500 hover:bg-green-600 transition-all duration-300 hover:scale-105"
+            >
+              <Bell className="w-4 h-4 mr-2 transition-transform duration-300 hover:scale-110" />
+              Enable Notifications
+            </Button>
+          )}
         </CardContent>
       </Card>
+
+      {/* Legal Disclaimer - Only show if not accepted */}
+      {!hasAcceptedDisclaimer && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-orange-700 text-lg">
+              <AlertTriangle className="w-5 h-5 transition-all duration-300 hover:scale-110" />
+              Important Medical Disclaimer
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-sm text-orange-800 space-y-2">
+              <p><strong>READ CAREFULLY BEFORE PROCEEDING:</strong></p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>This AI consultation is for <strong>informational and educational purposes ONLY</strong></li>
+                <li>This is <strong>NOT a substitute</strong> for professional medical advice, diagnosis, or treatment</li>
+                <li>Always consult with qualified healthcare providers for any health concerns</li>
+                <li>Do not disregard professional medical advice based on information provided here</li>
+                <li>In case of medical emergency, contact emergency services immediately</li>
+                <li>We take <strong>NO RESPONSIBILITY</strong> for any consequences of using this information</li>
+              </ul>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="disclaimer"
+                checked={hasAcceptedDisclaimer}
+                onChange={(e) => handleDisclaimerChange(e.target.checked)}
+                className="rounded transition-all duration-300 hover:scale-110"
+              />
+              <label htmlFor="disclaimer" className="text-sm font-medium text-orange-800">
+                I understand and accept the above disclaimers
+              </label>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* API Key Input */}
       <Card>
@@ -173,10 +269,16 @@ This information is for educational purposes only and is not intended to replace
               placeholder="Enter your OpenAI API key"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
+              className="transition-all duration-300 focus:scale-105"
             />
             <p className="text-xs text-gray-500">
               Your API key is stored locally and used only for this session. Get your API key from{" "}
-              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+              <a 
+                href="https://platform.openai.com/api-keys" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-blue-600 underline hover:text-blue-800 transition-colors duration-300"
+              >
                 OpenAI Platform
               </a>
             </p>
@@ -188,7 +290,7 @@ This information is for educational purposes only and is not intended to replace
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-purple-700">
-            <MessageSquare className="w-5 h-5" />
+            <MessageSquare className="w-5 h-5 transition-all duration-300 hover:scale-110" />
             Your Health Question
           </CardTitle>
         </CardHeader>
@@ -201,18 +303,19 @@ This information is for educational purposes only and is not intended to replace
               onChange={(e) => setQuestion(e.target.value)}
               rows={4}
               disabled={!hasAcceptedDisclaimer}
+              className="transition-all duration-300 focus:scale-105"
             />
           </div>
           <Button 
             onClick={handleSubmit}
             disabled={isLoading || !hasAcceptedDisclaimer || !question.trim() || !apiKey.trim()}
-            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all duration-300 hover:scale-105 hover:shadow-lg"
           >
             {isLoading ? (
               "Getting AI Response..."
             ) : (
               <>
-                <Send className="w-4 h-4 mr-2" />
+                <Send className="w-4 h-4 mr-2 transition-transform duration-300 hover:scale-110" />
                 Get AI Consultation
               </>
             )}
@@ -222,10 +325,10 @@ This information is for educational purposes only and is not intended to replace
 
       {/* AI Response */}
       {response && (
-        <Card>
+        <Card className="transition-all duration-300 hover:shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-green-700">
-              <Bot className="w-5 h-5" />
+              <Bot className="w-5 h-5 transition-all duration-300 hover:scale-110 hover:rotate-12" />
               AI Response
             </CardTitle>
           </CardHeader>

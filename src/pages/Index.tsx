@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Calendar, Heart, Brain, MessageSquare, Settings, User } from "lucide-react";
+import { Calendar, Heart, Brain, MessageSquare, Settings, User, LogOut } from "lucide-react";
 import { CycleTracker } from "@/components/CycleTracker";
 import { CycleCalendar } from "@/components/CycleCalendar";
 import { CyclePrediction } from "@/components/CyclePrediction";
@@ -8,12 +8,20 @@ import { CycleHealth } from "@/components/CycleHealth";
 import { AIConsultation } from "@/components/AIConsultation";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { Sidebar } from "@/components/Sidebar";
+import { Login } from "@/components/Login";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 interface UserProfile {
   name: string;
   age: string;
   photo: string;
+}
+
+interface User {
+  email: string;
+  name: string;
 }
 
 const Index = () => {
@@ -24,20 +32,65 @@ const Index = () => {
     age: "",
     photo: "",
   });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
+    // Check if user is logged in
+    const savedUser = localStorage.getItem("cyclesense-current-user");
+    if (savedUser) {
+      setCurrentUser(JSON.parse(savedUser));
+    }
+
     // Check if this is the first visit
     const hasSeenOnboarding = localStorage.getItem("cyclesense-onboarding");
-    if (!hasSeenOnboarding) {
+    if (!hasSeenOnboarding && savedUser) {
       setShowOnboarding(true);
     }
 
     // Load user profile
     const savedProfile = localStorage.getItem("cyclesense-profile");
     if (savedProfile) {
-      setUserProfile(JSON.parse(savedProfile));
+      const profile = JSON.parse(savedProfile);
+      setUserProfile(profile);
+    } else if (savedUser) {
+      // Set default profile from user data
+      const user = JSON.parse(savedUser);
+      setUserProfile({
+        name: user.name,
+        age: "",
+        photo: ""
+      });
     }
+
+    setIsLoading(false);
   }, []);
+
+  const handleLogin = (user: User) => {
+    setCurrentUser(user);
+    // Set default profile from user data if no profile exists
+    const savedProfile = localStorage.getItem("cyclesense-profile");
+    if (!savedProfile) {
+      const defaultProfile = {
+        name: user.name,
+        age: "",
+        photo: ""
+      };
+      setUserProfile(defaultProfile);
+      localStorage.setItem("cyclesense-profile", JSON.stringify(defaultProfile));
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("cyclesense-current-user");
+    setCurrentUser(null);
+    setUserProfile({ name: "", age: "", photo: "" });
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out.",
+    });
+  };
 
   const handleOnboardingComplete = () => {
     localStorage.setItem("cyclesense-onboarding", "true");
@@ -73,6 +126,25 @@ const Index = () => {
     }
   };
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-rose-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 bg-gradient-to-r from-rose-400 to-purple-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+            <Heart className="w-8 h-8 text-white" />
+          </div>
+          <p className="text-slate-600">Loading CycleSense...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login if not authenticated
+  if (!currentUser) {
+    return <Login onLogin={handleLogin} />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-rose-50 to-purple-50">
       {/* Sidebar */}
@@ -90,9 +162,23 @@ const Index = () => {
                 CycleSense
               </h1>
             </div>
-            <button className="p-2 rounded-full hover:bg-slate-100/50 transition-all duration-300 hover:scale-110 hover:rotate-12">
-              <Settings className="w-6 h-6 text-slate-600 transition-transform duration-300 hover:scale-110" />
-            </button>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm text-slate-600">
+                <span>Welcome, {currentUser.name}!</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="hover:bg-slate-100/50 transition-all duration-300 hover:scale-110"
+              >
+                <LogOut className="w-4 h-4 mr-2 transition-transform duration-300 hover:scale-110" />
+                Logout
+              </Button>
+              <button className="p-2 rounded-full hover:bg-slate-100/50 transition-all duration-300 hover:scale-110 hover:rotate-12">
+                <Settings className="w-6 h-6 text-slate-600 transition-transform duration-300 hover:scale-110" />
+              </button>
+            </div>
           </div>
         </div>
       </header>
