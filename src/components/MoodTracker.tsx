@@ -88,7 +88,7 @@ export const MoodTracker = () => {
     };
 
     const updatedMoods = [...moodEntries.filter(m => 
-      !format(m.date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
+      format(m.date, 'yyyy-MM-dd') !== format(selectedDate, 'yyyy-MM-dd')
     ), newEntry];
 
     saveMoods(updatedMoods);
