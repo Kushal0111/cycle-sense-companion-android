@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { Calendar, Heart, Brain, MessageSquare, Settings, User, LogOut, Baby, Lightbulb, Pill } from "lucide-react";
+import { Calendar, Heart, Brain, MessageSquare, Settings, User, LogOut, Baby, Lightbulb } from "lucide-react";
 import { CycleTracker } from "@/components/CycleTracker";
 import { CycleCalendar } from "@/components/CycleCalendar";
 import { CyclePrediction } from "@/components/CyclePrediction";
@@ -12,10 +11,8 @@ import { Login } from "@/components/Login";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { MoodTracker } from "@/components/MoodTracker";
 import { FertilityCalendar } from "@/components/FertilityCalendar";
 import { CycleRecommendations } from "@/components/CycleRecommendations";
-import { PillReminder } from "@/components/PillReminder";
 
 interface UserProfile {
   name: string;
@@ -133,9 +130,7 @@ const Index = () => {
     { id: "tracker", label: "Tracker", icon: Calendar, color: "text-emerald-600" },
     { id: "calendar", label: "Calendar", icon: Heart, color: "text-rose-600" },
     { id: "fertility", label: "Fertility", icon: Baby, color: "text-green-600" },
-    { id: "mood", label: "Mood", icon: Brain, color: "text-purple-600" },
     { id: "recommendations", label: "Tips", icon: Lightbulb, color: "text-amber-600" },
-    { id: "pills", label: "Pills", icon: Pill, color: "text-blue-600" },
     { id: "prediction", label: "Predict", icon: Brain, color: "text-indigo-600" },
     { id: "health", label: "Health", icon: Heart, color: "text-purple-600" },
     { id: "consultation", label: "Get Help", icon: MessageSquare, color: "text-teal-600" },
@@ -144,25 +139,13 @@ const Index = () => {
   const renderActiveTab = () => {
     switch (activeTab) {
       case "tracker":
-        return (
-          <div className="space-y-4">
-            <CycleTracker userProfile={userProfile} />
-            <div className="border-t pt-4">
-              <h3 className="text-lg font-semibold text-purple-700 mb-3">Mood Logging</h3>
-              <MoodTracker />
-            </div>
-          </div>
-        );
+        return <CycleTracker userProfile={userProfile} />;
       case "calendar":
         return <CycleCalendar />;
       case "fertility":
         return <FertilityCalendar />;
-      case "mood":
-        return <MoodTracker />;
       case "recommendations":
         return <CycleRecommendations />;
-      case "pills":
-        return <PillReminder />;
       case "prediction":
         return <CyclePrediction />;
       case "health":
