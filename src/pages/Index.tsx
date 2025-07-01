@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { Calendar, Heart, Brain, MessageSquare, Settings, User, LogOut, Baby, Lightbulb } from "lucide-react";
+import { Calendar, Heart, Brain, MessageSquare, Settings, User, LogOut, Lightbulb } from "lucide-react";
 import { CycleTracker } from "@/components/CycleTracker";
 import { CycleCalendar } from "@/components/CycleCalendar";
 import { CyclePrediction } from "@/components/CyclePrediction";
@@ -129,7 +130,6 @@ const Index = () => {
   const tabs = [
     { id: "tracker", label: "Tracker", icon: Calendar, color: "text-emerald-600" },
     { id: "calendar", label: "Calendar", icon: Heart, color: "text-rose-600" },
-    { id: "fertility", label: "Fertility", icon: Baby, color: "text-green-600" },
     { id: "recommendations", label: "Tips", icon: Lightbulb, color: "text-amber-600" },
     { id: "prediction", label: "Predict", icon: Brain, color: "text-indigo-600" },
     { id: "health", label: "Health", icon: Heart, color: "text-purple-600" },
@@ -141,9 +141,15 @@ const Index = () => {
       case "tracker":
         return <CycleTracker userProfile={userProfile} />;
       case "calendar":
-        return <CycleCalendar />;
-      case "fertility":
-        return <FertilityCalendar />;
+        return (
+          <div className="space-y-4">
+            <CycleCalendar />
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-semibold text-emerald-700 mb-3">Fertility Tracking</h3>
+              <FertilityCalendar />
+            </div>
+          </div>
+        );
       case "recommendations":
         return <CycleRecommendations />;
       case "prediction":
