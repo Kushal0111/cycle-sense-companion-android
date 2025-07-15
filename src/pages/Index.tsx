@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { Heart, User, LogOut, Menu } from "lucide-react";
+import { Calendar, Heart, Brain, MessageSquare, User, LogOut } from "lucide-react";
 import { CycleTracker } from "@/components/CycleTracker";
 import { CycleCalendar } from "@/components/CycleCalendar";
 import { CyclePrediction } from "@/components/CyclePrediction";
@@ -27,6 +26,7 @@ interface User {
 }
 
 const Index = () => {
+  const [activeTab, setActiveTab] = useState("tracker");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile>({
     name: "",
@@ -126,6 +126,56 @@ const Index = () => {
     setUserProfile(profile);
   };
 
+  const tabs = [
+    { id: "tracker", label: "Tracker", icon: Calendar, color: "text-emerald-600" },
+    { id: "calendar", label: "Calendar", icon: Calendar, color: "text-rose-600" },
+    { id: "prediction", label: "Predict", icon: Brain, color: "text-indigo-600" },
+    { id: "consultation", label: "Get Help", icon: MessageSquare, color: "text-teal-600" },
+  ];
+
+  const renderActiveTab = () => {
+    switch (activeTab) {
+      case "tracker":
+        return (
+          <div className="space-y-6">
+            <CycleTracker userProfile={userProfile} />
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-semibold text-purple-700 mb-3">Personalized Tips</h3>
+              <CycleRecommendations />
+            </div>
+          </div>
+        );
+      case "calendar":
+        return (
+          <div className="space-y-6">
+            <CycleCalendar />
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-semibold text-emerald-700 mb-3">Fertility Tracking</h3>
+              <FertilityCalendar />
+            </div>
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-semibold text-purple-700 mb-3">Health Analysis</h3>
+              <CycleHealth />
+            </div>
+          </div>
+        );
+      case "prediction":
+        return <CyclePrediction />;
+      case "consultation":
+        return <AIConsultation />;
+      default:
+        return (
+          <div className="space-y-6">
+            <CycleTracker userProfile={userProfile} />
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-semibold text-purple-700 mb-3">Personalized Tips</h3>
+              <CycleRecommendations />
+            </div>
+          </div>
+        );
+    }
+  };
+
   // Show loading state
   if (isLoading) {
     return (
@@ -151,98 +201,91 @@ const Index = () => {
       <Sidebar onProfileUpdate={handleProfileUpdate} />
 
       {/* Header */}
-      <header className="bg-white/90 backdrop-blur-md border-b border-slate-200/50 flex-shrink-0 px-4 py-3 ml-12">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-rose-400 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
-              <Heart className="w-5 h-5 text-white" />
+      <header className="bg-white/70 backdrop-blur-md border-b border-slate-200/50 flex-shrink-0">
+        <div className="container mx-auto px-4 py-3 ml-12">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-rose-400 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+                <Heart className="w-5 h-5 text-white" />
+              </div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-rose-600 to-purple-600 bg-clip-text text-transparent">
+                CycleSense
+              </h1>
             </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-rose-600 to-purple-600 bg-clip-text text-transparent">
-              CycleSense
-            </h1>
-          </div>
-          <div className="flex items-center gap-3">
-            {userProfile.photo && (
-              <Avatar className="w-8 h-8 border-2 border-white shadow-sm">
-                <AvatarImage src={userProfile.photo} alt="Profile" />
-                <AvatarFallback className="bg-gradient-to-r from-rose-100 to-purple-100 text-rose-600">
-                  <User className="w-4 h-4" />
-                </AvatarFallback>
-              </Avatar>
-            )}
-            <div className="text-sm text-slate-600">
-              Hi, {userProfile.name || currentUser.name}!
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 text-sm text-slate-600">
+                <span>Hi, {currentUser.name}!</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="hover:bg-slate-100/50"
+              >
+                <LogOut className="w-4 h-4 mr-1" />
+                Logout
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              className="hover:bg-slate-100/50"
-            >
-              <LogOut className="w-4 h-4" />
-            </Button>
           </div>
         </div>
       </header>
 
-      {/* Main Dashboard - Single Scrollable Screen */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="container mx-auto px-4 py-6 space-y-6 pb-8">
-          {/* Cycle Tracker Section */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-slate-200/50">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-              <Heart className="w-5 h-5 text-rose-500" />
-              Cycle Tracker
-            </h2>
-            <CycleTracker userProfile={userProfile} />
-          </div>
-
-          {/* Quick Recommendations */}
-          <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200/50">
-            <h2 className="text-lg font-semibold text-purple-800 mb-4">
-              Today's Tips
-            </h2>
-            <CycleRecommendations />
-          </div>
-
-          {/* Calendar & Fertility Combined */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-slate-200/50">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">
-              Calendar & Fertility
-            </h2>
-            <div className="space-y-6">
-              <CycleCalendar />
-              <div className="border-t pt-4">
-                <FertilityCalendar />
+      {/* Profile Section */}
+      {userProfile.photo && (
+        <div className="container mx-auto px-4 py-4 flex-shrink-0">
+          <div className="flex items-center space-x-3">
+            <Avatar className="w-16 h-16 border-2 border-white shadow-lg">
+              <AvatarImage src={userProfile.photo} alt="Profile" />
+              <AvatarFallback className="bg-gradient-to-r from-rose-100 to-purple-100 text-rose-600">
+                <User className="w-6 h-6" />
+              </AvatarFallback>
+            </Avatar>
+            {userProfile.name && (
+              <div>
+                <h2 className="text-lg font-semibold text-slate-700">
+                  Hello, {userProfile.name}!
+                </h2>
+                {userProfile.age && (
+                  <p className="text-slate-500 text-sm">Age: {userProfile.age}</p>
+                )}
               </div>
-            </div>
-          </div>
-
-          {/* Health Analysis */}
-          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-6 border border-emerald-200/50">
-            <h2 className="text-lg font-semibold text-emerald-800 mb-4">
-              Health Analysis
-            </h2>
-            <CycleHealth />
-          </div>
-
-          {/* Cycle Prediction */}
-          <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-6 border border-indigo-200/50">
-            <h2 className="text-lg font-semibold text-indigo-800 mb-4">
-              Cycle Prediction
-            </h2>
-            <CyclePrediction />
-          </div>
-
-          {/* AI Consultation */}
-          <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-xl p-6 border border-teal-200/50">
-            <h2 className="text-lg font-semibold text-teal-800 mb-4">
-              AI Health Assistant
-            </h2>
-            <AIConsultation />
+            )}
           </div>
         </div>
+      )}
+
+      {/* Main Content */}
+      <main className="flex-1 container mx-auto px-4 overflow-hidden">
+        <div className="h-full overflow-y-auto pb-20">
+          {renderActiveTab()}
+        </div>
       </main>
+
+      {/* Bottom Navigation */}
+      <nav className="bg-white/80 backdrop-blur-md border-t border-slate-200/50 flex-shrink-0">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-around py-3">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex flex-col items-center py-2 px-3 rounded-lg transition-all ${
+                    isActive
+                      ? "bg-gradient-to-r from-slate-600 to-slate-700 text-white shadow-lg scale-105"
+                      : `${tab.color} hover:bg-slate-100/50`
+                  }`}
+                >
+                  <Icon className={`w-5 h-5 mb-1 ${isActive ? 'scale-110' : ''}`} />
+                  <span className="text-sm font-medium">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </nav>
 
       {/* Onboarding Modal */}
       {showOnboarding && (
