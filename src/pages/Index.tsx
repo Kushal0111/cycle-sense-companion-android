@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { Calendar, Heart, Brain, MessageSquare, Settings, User, LogOut, Lightbulb } from "lucide-react";
+import { Calendar, Brain, MessageSquare, User, LogOut } from "lucide-react";
 import { CycleTracker } from "@/components/CycleTracker";
 import { CycleCalendar } from "@/components/CycleCalendar";
 import { CyclePrediction } from "@/components/CyclePrediction";
@@ -129,37 +128,51 @@ const Index = () => {
 
   const tabs = [
     { id: "tracker", label: "Tracker", icon: Calendar, color: "text-emerald-600" },
-    { id: "calendar", label: "Calendar", icon: Heart, color: "text-rose-600" },
-    { id: "recommendations", label: "Tips", icon: Lightbulb, color: "text-amber-600" },
+    { id: "calendar", label: "Calendar", icon: Calendar, color: "text-rose-600" },
     { id: "prediction", label: "Predict", icon: Brain, color: "text-indigo-600" },
-    { id: "health", label: "Health", icon: Heart, color: "text-purple-600" },
     { id: "consultation", label: "Get Help", icon: MessageSquare, color: "text-teal-600" },
   ];
 
   const renderActiveTab = () => {
     switch (activeTab) {
       case "tracker":
-        return <CycleTracker userProfile={userProfile} />;
+        return (
+          <div className="space-y-6">
+            <CycleTracker userProfile={userProfile} />
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-semibold text-purple-700 mb-3">Personalized Tips</h3>
+              <CycleRecommendations />
+            </div>
+          </div>
+        );
       case "calendar":
         return (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <CycleCalendar />
             <div className="border-t pt-4">
               <h3 className="text-lg font-semibold text-emerald-700 mb-3">Fertility Tracking</h3>
               <FertilityCalendar />
             </div>
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-semibold text-purple-700 mb-3">Health Analysis</h3>
+              <CycleHealth />
+            </div>
           </div>
         );
-      case "recommendations":
-        return <CycleRecommendations />;
       case "prediction":
         return <CyclePrediction />;
-      case "health":
-        return <CycleHealth />;
       case "consultation":
         return <AIConsultation />;
       default:
-        return <CycleTracker userProfile={userProfile} />;
+        return (
+          <div className="space-y-6">
+            <CycleTracker userProfile={userProfile} />
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-semibold text-purple-700 mb-3">Personalized Tips</h3>
+              <CycleRecommendations />
+            </div>
+          </div>
+        );
     }
   };
 
@@ -250,8 +263,8 @@ const Index = () => {
 
       {/* Bottom Navigation */}
       <nav className="bg-white/80 backdrop-blur-md border-t border-slate-200/50 flex-shrink-0">
-        <div className="container mx-auto px-2">
-          <div className="flex justify-around py-2">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-around py-3">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -259,14 +272,14 @@ const Index = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex flex-col items-center py-2 px-2 rounded-lg transition-all ${
+                  className={`flex flex-col items-center py-2 px-3 rounded-lg transition-all ${
                     isActive
                       ? "bg-gradient-to-r from-slate-600 to-slate-700 text-white shadow-lg scale-105"
                       : `${tab.color} hover:bg-slate-100/50`
                   }`}
                 >
-                  <Icon className={`w-4 h-4 mb-1 ${isActive ? 'scale-110' : ''}`} />
-                  <span className="text-xs font-medium">{tab.label}</span>
+                  <Icon className={`w-5 h-5 mb-1 ${isActive ? 'scale-110' : ''}`} />
+                  <span className="text-sm font-medium">{tab.label}</span>
                 </button>
               );
             })}
