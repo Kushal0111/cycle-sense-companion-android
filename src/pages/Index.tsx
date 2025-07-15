@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, Brain, MessageSquare, User, LogOut } from "lucide-react";
+import { Calendar, Heart, Brain, MessageSquare, User, LogOut } from "lucide-react";
 import { CycleTracker } from "@/components/CycleTracker";
 import { CycleCalendar } from "@/components/CycleCalendar";
 import { CyclePrediction } from "@/components/CyclePrediction";
